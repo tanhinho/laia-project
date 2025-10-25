@@ -25,6 +25,7 @@ def main():
             local_path = f"data/{year}/yellow_tripdata_{year}-{month:02d}.parquet"
             print(f"Downloading {url} to {local_path}...")
             response = requests.get(url)
+            response.raise_for_status()
             with open(local_path, "wb") as f:
                 f.write(response.content)
             print(f"Downloaded {local_path}")
