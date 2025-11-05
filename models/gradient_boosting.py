@@ -72,7 +72,7 @@ with mlflow.start_run() as run:
 
     # Compute metrics
     mae = mean_absolute_error(y_val, y_pred)
-    rmse = mean_squared_error(y_val, y_pred, squared=False)
+    rmse = mean_squared_error(y_val, y_pred)
     r2 = r2_score(y_val, y_pred)
 
     mlflow.log_metric("MAE", mae)
