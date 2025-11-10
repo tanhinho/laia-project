@@ -93,6 +93,6 @@ with mlflow.start_run() as run:
 
 # Register the best model
 print(f"\nBest model: MAE={best_mae:.4f}")
-model_uri = f"runs:/{best_run_id}/model"
+model_uri = f"runs:/{best_run_id}/gradient_boosting_model"
 registered_model = mlflow.register_model(model_uri, "gradient_boosting_regressor")
 print(f"Registered model version: {registered_model.version}")
