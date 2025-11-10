@@ -84,6 +84,6 @@ with mlflow.start_run() as run:
 
 # Register the best model
 print(f"\nBest model: MAE={best_mae:.4f}")
-model_uri = f"runs:/{best_run_id}/model"
+model_uri = f"runs:/{best_run_id}/linear_regression"
 registered_model = mlflow.register_model(model_uri, "linear_regression")
 print(f"Registered model version: {registered_model.version}")
