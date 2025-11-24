@@ -16,8 +16,8 @@ import argparse
 DATA_PATH = 'data'
 ARTIFACTS_PATH = 'artifacts'
 
-TRAIN_YEARS = ['2010', '2011']
-HOLDOUT_YEARS = ['2012'] 
+TRAIN_YEARS = ['2011', '2012']
+HOLDOUT_YEARS = ['2013'] 
 
 # --- Column Definitions ---
 PICKUP_DT_COL = 'tpep_pickup_datetime'
