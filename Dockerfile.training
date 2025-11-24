@@ -1,0 +1,14 @@
+FROM python:3.13-slim
+
+WORKDIR /app
+
+# Install system dependencies
+COPY requirements.training.txt .
+RUN pip install --no-cache-dir -r requirements.training.txt
+
+# Copy code
+COPY LAIA_Project/ .
+
+# Run the pipeline. 
+# We chain the scripts: first preprocess (generate artifacts), then train (log artifacts)
+CMD python preprocess.py --train-size 10000 && python models/linear_regression.py
