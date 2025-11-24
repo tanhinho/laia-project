@@ -14,7 +14,7 @@ import requests
 
 
 DOWNLOAD_URL_TEMPLATE = f"https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_{{year}}-{{month:02d}}.parquet"
-YEARS = [2010, 2011, 2012]
+YEARS = [2011, 2012, 2013]
 
 
 def main():
