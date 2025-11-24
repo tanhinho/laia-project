@@ -5,32 +5,41 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.linear_model import LinearRegression
 import mlflow
 
-mlflow.set_tracking_uri("http://10.17.0.185:5050")
+
+# Updated to use environment variable for MLflow tracking URI
+mlflow.set_tracking_uri(
+    os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5050"))
+
 experiment_name = "linear_regression"
+
+
 artifact_uri = "mlflow-artifacts:/"
 existing_experiment = mlflow.get_experiment_by_name(experiment_name)
 if existing_experiment:
-    # Check if the existing experiment has a problematic artifact location
     if existing_experiment.artifact_location.startswith("/mlflow") or \
        existing_experiment.artifact_location.startswith("file:///mlflow"):
-        print(f"Existing experiment has Docker path artifact location: {existing_experiment.artifact_location}")
+        print(
+            f"Existing experiment has Docker path artifact location: {existing_experiment.artifact_location}")
         print("Creating new experiment with remote artifact storage...")
-        # Use a new experiment name for remote artifact storage
-        experiment_name = "iris_classification_remote"
+        # 2. Fix naming (was "iris_classification_remote")
+        experiment_name = "linear_regression_remote"
         try:
-            experiment_id = mlflow.create_experiment(experiment_name, artifact_location=artifact_uri)
+            experiment_id = mlflow.create_experiment(
+                experiment_name, artifact_location=artifact_uri)
             print(f"Created new experiment '{experiment_name}'")
         except Exception:
             pass
     else:
         print(f"Using existing experiment '{experiment_name}'")
 else:
-    # Create new experiment with proper artifact location
     try:
-        experiment_id = mlflow.create_experiment(experiment_name, artifact_location=artifact_uri)
-        print(f"Created new experiment '{experiment_name}' with remote artifact storage")
+        experiment_id = mlflow.create_experiment(
+            experiment_name, artifact_location=artifact_uri)
+        print(
+            f"Created new experiment '{experiment_name}' with remote artifact storage")
     except Exception as e:
         print(f"Note: {e}")
+
 mlflow.set_experiment(experiment_name)
 
 ARTIFACTS_PATH = 'artifacts'
@@ -57,25 +66,32 @@ with mlflow.start_run() as run:
     # --- 3. Get coefficients ---
     beta = linear_model.coef_
     # --- 4. Make predictions ---
-    y_pred = linear_model.predict(X_train)
+    y_pred = linear_model.predict(X_val)
 
     # --- 5. Evaluate ---
-    mae = mean_absolute_error(y_train, y_pred)
-    rmse = mean_squared_error(y_train, y_pred)
-    r2 = r2_score(y_train, y_pred)
+    mae = mean_absolute_error(y_val, y_pred)
+    rmse = mean_squared_error(y_val, y_pred)
+    r2 = r2_score(y_val, y_pred)
 
-    #mlflow.log_param("coeficients",beta")
+    # mlflow.log_param("coeficients",beta")
     mlflow.log_metric("MAE", mae)
     mlflow.log_metric("RMSE", rmse)
     mlflow.log_metric("R2", r2)
 
-    signature = mlflow.models.infer_signature(X_train, linear_model.predict(X_train))
-    mlflow.sklearn.log_model(linear_model, "linear_regression", signature=signature, input_example=X_train[:5])
+    # Ensure this path matches where preprocess.py saved it
+    mlflow.log_artifact("artifacts/preprocessor.pkl",
+                        artifact_path="preprocessor")
+
+    signature = mlflow.models.infer_signature(
+        X_train, linear_model.predict(X_train))
+    mlflow.sklearn.log_model(linear_model, "linear_regression",
+                             signature=signature, input_example=X_train[:5])
 
     if mae < best_mae:
         best_mae = mae
         best_run_id = run.info.run_id
 
+    print("Model and preprocessor logged to MLflow. ")
 
     print("Coefficients:", beta)
     print(f"MAE: {mae:.2f}")
