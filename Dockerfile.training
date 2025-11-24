@@ -7,7 +7,7 @@ COPY requirements.training.txt .
 RUN pip install --no-cache-dir -r requirements.training.txt
 
 # Copy code
-COPY LAIA_Project/ .
+COPY ./ .
 
 # Run the pipeline. 
 # We chain the scripts: first preprocess (generate artifacts), then train (log artifacts)

@@ -5,7 +5,7 @@ WORKDIR /app
 COPY requirements.serving.txt .
 RUN pip install --no-cache-dir -r requirements.serving.txt
 
-COPY LAIA_Project/ .
+COPY ./ .
 
 # Expose FastAPI port
 EXPOSE 8000
