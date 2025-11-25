@@ -7,7 +7,7 @@ from schemas import InputPayload
 from mlflow.tracking import MlflowClient
 
 # Import your custom preprocessing logic
-from preprocess import process_data
+from preprocess import process_data_for_inference
 
 
 app = FastAPI()
@@ -28,24 +28,30 @@ preprocessor = None
 def load_artifacts():
     global model, preprocessor
     try:
-        print(f"Loading model: {MODEL_NAME}@{MODEL_ALIAS}...")
+        print(f"Loading model: {MODEL_NAME}@{MODEL_ALIAS}...", flush=True)
         model_uri = f"models:/{MODEL_NAME}@{MODEL_ALIAS}"
 
         # 1. Load the Model
+        print(f"Downloading model from {model_uri}...", flush=True)
         model = mlflow.sklearn.load_model(model_uri)
+        print("Model loaded successfully.", flush=True)
 
         # 2. Download and Load the Preprocessor artifact
+        print("Loading preprocessor...", flush=True)
         client = MlflowClient()
         mv = client.get_model_version_by_alias(MODEL_NAME, MODEL_ALIAS)
-        artifact_uri = client.get_model_version_download_uri(
-            MODEL_NAME, mv.version)
+
+        # Download from the run artifacts, not model registry artifacts
+        print(f"Downloading preprocessor from run {mv.run_id}...", flush=True)
         local_path = mlflow.artifacts.download_artifacts(
-            artifact_uri=f"{artifact_uri}/preprocessor/preprocessor.pkl")
+            run_id=mv.run_id,
+            artifact_path="preprocessor/preprocessor.pkl")
         preprocessor = joblib.load(local_path)
 
-        print("Artifacts loaded successfully.")
+        print("Artifacts loaded successfully.", flush=True)
     except Exception as e:
-        print(f"Error loading artifacts: {e}")
+        print(f"Error loading artifacts: {e}", flush=True)
+        raise
 
 
 @app.post("/predict")
@@ -60,7 +66,7 @@ def predict(payload: InputPayload):
         df = pd.DataFrame(data_dicts)
 
         # 1. Preprocess (Cleaning + Feature Eng) using your script
-        df_clean = process_data(df)
+        df_clean = process_data_for_inference(df)
 
         # 2. Transform (Scaling/Encoding) using loaded preprocessor
         # Note: Ensure columns match what the preprocessor expects

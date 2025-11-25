@@ -1,0 +1,9 @@
+pandas
+numpy
+scipy
+scikit-learn
+mlflow
+pyarrow
+joblib
+requests
+boto3
