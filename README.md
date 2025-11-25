@@ -1,5 +1,3 @@
-
-
 ### 1. Build the Training Image
 
 ```bash
@@ -20,6 +18,7 @@ sudo docker run --rm \
 ```
 
 **Environment Variables:**
+
 - `MLFLOW_TRACKING_URI`: MLflow server endpoint
 - `MLFLOW_EXPERIMENT_NAME`: Name of the experiment (e.g., linear_regression, random_forest)
 
@@ -41,11 +40,13 @@ docker run --rm \
 ```
 
 **Environment Variables:**
+
 - `MLFLOW_TRACKING_URI`: MLflow server endpoint
 - `MLFLOW_MODEL_NAME`: Name of the registered model
 - `MODEL_ALIAS`: Model version alias (default: production)
 
 **API Access:**
+
 - Server runs on port 8000
 - Access API documentation at http://localhost:8000/docs
 
