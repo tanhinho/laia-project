@@ -181,7 +181,9 @@ def process_data_for_inference(df: pd.DataFrame) -> pd.DataFrame:
             # Convert to string, then to category for memory efficiency
             df[col] = df[col].fillna(-1).astype(str).astype('category')
         else:
-            print(f"Warning: Column {col} not found. Skipping cleaning.")
+            # Add default value if column is missing
+            print(f"Warning: Column {col} not found. Adding default value.")
+            df[col] = '1'
 
     # 4. Optimize Numeric Dtypes
     df[NUMERIC_FEATURES] = df[NUMERIC_FEATURES].astype(np.float32)
