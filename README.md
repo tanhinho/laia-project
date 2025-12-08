@@ -31,12 +31,12 @@ sudo docker build -t serving-image -f Dockerfile.serving .
 ### 4. Run the Inference Server
 
 ```bash
-sudo docker run --rm \
-  -p 9001:8000 \
-  -e MLFLOW_TRACKING_URI=http://10.17.0.185:5050 \
-  -e MLFLOW_MODEL_NAME=linear_regression \
-  -e MODEL_ALIAS=production \
-  serving-image
+sudo docker run -d --name fastapi \
+-p 9001:9001 \
+-e MLFLOW_TRACKING_URI=http://10.17.0.185:5050 \
+-e MLFLOW_MODEL_NAME=linear_regression \
+-e MODEL_ALIAS=production \
+serving-image
 ```
 
 **Environment Variables:**
