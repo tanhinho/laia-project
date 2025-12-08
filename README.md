@@ -31,8 +31,8 @@ sudo docker build -t serving-image -f Dockerfile.serving .
 ### 4. Run the Inference Server
 
 ```bash
-docker run --rm \
-  -p 8000:8000 \
+sudo docker run --rm \
+  -p 9001:8000 \
   -e MLFLOW_TRACKING_URI=http://10.17.0.185:5050 \
   -e MLFLOW_MODEL_NAME=linear_regression \
   -e MODEL_ALIAS=production \
@@ -47,7 +47,7 @@ docker run --rm \
 
 **API Access:**
 
-- Server runs on port 8000
+- Server runs on port 9001
 - Access API documentation at http://localhost:8000/docs
 
 ## Project Structure

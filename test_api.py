@@ -1,6 +1,6 @@
 import requests
 
-url = "http://localhost:8000/predict"
+url = "http://localhost:9001/predict"
 
 payload = {
     "data": [
