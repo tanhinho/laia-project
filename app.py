@@ -13,10 +13,24 @@ from preprocess import process_data_for_inference
 app = FastAPI()
 
 # Configuration
-MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5050")
+MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI")
+
+if MLFLOW_TRACKING_URI is None:
+    raise ValueError("MLFLOW_TRACKING_URI environment variable is not set.")
+
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
-MODEL_NAME = os.getenv("MLFLOW_MODEL_NAME", "linear_regression")
-MODEL_ALIAS = os.getenv("MODEL_ALIAS", "Production")
+
+MODEL_NAME = os.getenv("MLFLOW_MODEL_NAME")
+
+if MODEL_NAME is None:
+    MODEL_NAME = "linear_regression"
+    print(f"MLFLOW_MODEL_NAME not set. Defaulting to: {MODEL_NAME}")
+
+
+MODEL_ALIAS = os.getenv("MODEL_ALIAS")
+if MODEL_ALIAS is None:
+    MODEL_ALIAS = "production"
+    print(f"MODEL_ALIAS not set. Defaulting to: {MODEL_ALIAS}")
 
 
 # artifact holder vars
@@ -73,8 +87,10 @@ def predict(payload: InputPayload):
         X_input = preprocessor.transform(df_clean)
 
         # 3. Predict
-        predictions = model.predict(X_input)
+        seconds_predictions = model.predict(X_input)
 
-        return {"predictions": predictions.tolist()}
+        minutes_predictions = seconds_predictions / 60.0  # Convert to minutes
+
+        return {"predictions": minutes_predictions.tolist()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
