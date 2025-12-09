@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 
 class TripData(BaseModel):
@@ -7,9 +7,10 @@ class TripData(BaseModel):
     tpep_pickup_datetime: str
     passenger_count: int
     trip_distance: float
+    RatecodeID: Optional[int] = 1
     PULocationID: int
     DOLocationID: int
 
 
 class InputPayload(BaseModel):
-    records: List[TripData]
+    data: List[TripData]
