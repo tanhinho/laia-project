@@ -1,8 +1,8 @@
 global:
-  scrape_interval: 15s
+  scrape_interval: 5s
 
 scrape_configs:
   - job_name: 'fastapi_model_serving'
     static_configs:
-      # 'fastapi-app' must match the container name in Docker Compose
+      #  match container name 
       - targets: ['fastapi-app:9001']

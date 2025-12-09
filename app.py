@@ -7,9 +7,20 @@ from schemas import InputPayload
 from mlflow.tracking import MlflowClient
 from prometheus_fastapi_instrumentator import Instrumentator
 from preprocess import process_data_for_inference
+from prometheus_client import Histogram, Counter
 
 
+OUTPUT_MINUTES_HISTOGRAM = Histogram(
+    'model_prediction_minutes', 
+    'Distribution of predicted duration in minutes', 
+    buckets=[1, 5, 10, 15, 20, 30, 45, 60, 90, 120]
+)
 
+INPUT_DISTANCE_HISTOGRAM = Histogram(
+    'input_feature_distance', 
+    'Distribution of input trip distance',
+    buckets=[0, 2, 5, 10, 20, 50, 100]
+)
 
 app = FastAPI()
 
@@ -81,21 +92,23 @@ def predict(payload: InputPayload):
             status_code=503, detail="Model not loaded. Please try again later.")
 
     try:
-        # Convert Pydantic list to DataFrame
-        data_dicts = [item.dict() for item in payload.data]
+        
+        data_dicts = [item.model_dump() for item in payload.data]
         df = pd.DataFrame(data_dicts)
 
-        # 1. Preprocess (Cleaning + Feature Eng) using your script
+        # Log key features before processing to catch raw data drift
+        if 'trip_distance' in df.columns:
+             for val in df['trip_distance']:
+                 INPUT_DISTANCE_HISTOGRAM.observe(val)
+
         df_clean = process_data_for_inference(df)
-
-        # 2. Transform (Scaling/Encoding) using loaded preprocessor
-        # Note: Ensure columns match what the preprocessor expects
         X_input = preprocessor.transform(df_clean)
-
-        # 3. Predict
         seconds_predictions = model.predict(X_input)
+        minutes_predictions = seconds_predictions / 60.0
 
-        minutes_predictions = seconds_predictions / 60.0  # Convert to minutes
+        # logs for stability check
+        for pred in minutes_predictions:
+            OUTPUT_MINUTES_HISTOGRAM.observe(pred)
 
         return {"predictions": minutes_predictions.tolist()}
     except Exception as e:
