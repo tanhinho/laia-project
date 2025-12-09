@@ -5,9 +5,10 @@ import mlflow.pyfunc
 from fastapi import FastAPI, HTTPException
 from schemas import InputPayload
 from mlflow.tracking import MlflowClient
-
-# Import your custom preprocessing logic
+from prometheus_fastapi_instrumentator import Instrumentator
 from preprocess import process_data_for_inference
+
+
 
 
 app = FastAPI()
@@ -37,9 +38,14 @@ if MODEL_ALIAS is None:
 model = None
 preprocessor = None
 
+# prometheus dep
+instrumentator = Instrumentator().instrument(app)
 
 @app.on_event("startup")
 def load_artifacts():
+    # expose metrics endpoint for scraping
+    instrumentator.expose(app)
+    
     global model, preprocessor
     try:
         print(f"Loading model: {MODEL_NAME}@{MODEL_ALIAS}...", flush=True)
