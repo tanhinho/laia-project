@@ -10,3 +10,4 @@ pyarrow
 scipy
 boto3
 prometheus-fastapi-instrumentator
+prometheus-client
