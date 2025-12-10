@@ -30,7 +30,7 @@ jobs:
       - run: uv run pytest tests/test_train.py -v
 
   build-images:
-    # Passed tests, now build docker images for models and serving
+    # Passed tests, now build docker images for models, serving and mlflow
     runs-on: ubuntu-latest
     needs: test-unit
     steps:
@@ -61,6 +61,7 @@ jobs:
           outputs: type=docker,dest=/tmp/serving.tar
       - run: docker load --input /tmp/serving.tar
 
+      # Build mlflow image and upload to artifacts for use in continuous delivery
       - name: Build mlflow image
         uses: docker/build-push-action@v5
         with:
