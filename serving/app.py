@@ -105,12 +105,12 @@ def predict(payload: InputPayload):
         df_clean = process_data_for_inference(df)
         X_input = preprocessor.transform(df_clean)
         seconds_predictions = model.predict(X_input)
-        minutes_predictions = seconds_predictions / 60.0
+        minutes_predictions = [s / 60.0 for s in seconds_predictions]
 
         # logs for stability check
         for pred in minutes_predictions:
             OUTPUT_MINUTES_HISTOGRAM.observe(pred)
 
-        return {"predictions": minutes_predictions.tolist()}
+        return {"predictions": minutes_predictions}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
