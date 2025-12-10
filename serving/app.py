@@ -7,7 +7,6 @@ from schemas import InputPayload
 from mlflow.tracking import MlflowClient
 from utils import process_data_for_inference
 from prometheus_fastapi_instrumentator import Instrumentator
-from preprocess import process_data_for_inference
 from prometheus_client import Histogram, Counter
 
 

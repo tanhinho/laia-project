@@ -3,8 +3,8 @@ version: '3.8'
 services:
   fastapi-app:
     build:
-      context: .
-      dockerfile: Dockerfile.serving
+      context: ./serving
+      dockerfile: Dockerfile
     container_name: fastapi-app
     ports:
       - "9001:9001"
