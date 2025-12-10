@@ -5,9 +5,7 @@ import mlflow.pyfunc
 from fastapi import FastAPI, HTTPException
 from schemas import InputPayload
 from mlflow.tracking import MlflowClient
-
-# Import your custom preprocessing logic
-from preprocess import process_data_for_inference
+from utils import process_data_for_inference
 
 
 app = FastAPI()
