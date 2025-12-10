@@ -3,7 +3,16 @@ import scipy.sparse
 import numpy as np
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.model_selection import GridSearchCV
 import mlflow
+import itertools
+
+def expand_grid(grid):
+    keys = grid.keys()
+    vals = grid.values()
+    for combo in itertools.product(*vals):
+        yield dict(zip(keys, combo))
+
 
 mlflow.set_tracking_uri("http://10.17.0.185:5050")
 experiment_name = "gradient_boosting_regression"
@@ -36,6 +45,16 @@ mlflow.set_experiment(experiment_name)
 # Define the path to your artifacts
 ARTIFACTS_PATH = 'artifacts'
 
+param_grid = {
+    "n_estimators": [100, 200, 300, 500],
+    "learning_rate": [0.025, 0.05, 0.1],
+    "max_depth": [3, 5, 7, 9],
+    "subsample": [0.5, 0.8, 1.0],
+}
+
+param_combinations = list(expand_grid(param_grid))
+print(f"Total runs: {len(param_combinations)}")
+
 print("Loading processed data...")
 
 X_train = scipy.sparse.load_npz(os.path.join(ARTIFACTS_PATH, 'X_train.npz'))
@@ -48,51 +67,55 @@ print("Data loaded successfully.")
 
 print("Training GradientBoostingRegressor model...")
 
-best_mae = float("inf")
+best_mse = float("inf")
 best_run_id = None
+best_params = None
 
-with mlflow.start_run() as run:
-    # --- Initialize the model ---
-    gbr_model = GradientBoostingRegressor(
-        n_estimators=300,      
-        learning_rate=0.05,    
-        max_depth=5,           
-        random_state=42
-    )
+for params in param_combinations:
+    with mlflow.start_run() as run:
+        # --- Initialize the model ---
 
-    # --- Train the model ---
-    gbr_model.fit(X_train, y_train)
+        mlflow.log_params(params)
 
-    print("Model training complete.")
+        gbr_model = GradientBoostingRegressor(           
+            random_state=42,
+            **params
+        )
 
-    # --- Evaluate model ---
-    print("Evaluating model on validation data...")
+        # --- Train the model ---
+        gbr_model.fit(X_train, y_train)
 
-    y_pred = gbr_model.predict(X_val)
+        print("Model training complete.")
 
-    # Compute metrics
-    mae = mean_absolute_error(y_val, y_pred)
-    rmse = mean_squared_error(y_val, y_pred)
-    r2 = r2_score(y_val, y_pred)
+        # --- Evaluate model ---
+        print("Evaluating model on validation data...")
 
-    mlflow.log_metric("MAE", mae)
-    mlflow.log_metric("RMSE", rmse)
-    mlflow.log_metric("R2", r2)
+        y_pred = gbr_model.predict(X_val)
 
-    signature = mlflow.models.infer_signature(X_train, gbr_model.predict(X_train))
-    mlflow.sklearn.log_model(gbr_model, "gradient_boosting_model", signature=signature, input_example=X_train[:5])
+        # Compute metrics
+        mae = mean_absolute_error(y_val, y_pred)
+        mse = mean_squared_error(y_val, y_pred)
+        r2 = r2_score(y_val, y_pred)
 
-    if mae < best_mae:
-        best_mae = mae
-        best_run_id = run.info.run_id
+        mlflow.log_metric("MAE", mae)
+        mlflow.log_metric("MSE", mse)
+        mlflow.log_metric("R2", r2)
 
-    print("--- Gradient Boosting Model Evaluation ---")
-    print(f"Mean Absolute Error (MAE): {mae:.2f} seconds")
-    print(f"Root Mean Squared Error (RMSE): {rmse:.2f} seconds")
-    print(f"R² Score: {r2:.3f}")
+        signature = mlflow.models.infer_signature(X_train, gbr_model.predict(X_train))
+        mlflow.sklearn.log_model(gbr_model, "gradient_boosting_model", signature=signature, input_example=X_train[:5])
+
+        if mse < best_mse:
+            best_mse = mse
+            best_run_id = run.info.run_id
+            best_params = params
+
+        print("--- Gradient Boosting Model Evaluation ---")
+        print(f"MAE: {mae:.2f} seconds")
+        print(f"MSE: {mse:.2f} seconds")
+        print(f"R² Score: {r2:.3f}")
 
 # Register the best model
-print(f"\nBest model: MAE={best_mae:.4f}")
+print(f"\nBest model: MSE={best_mse:.4f}")
 model_uri = f"runs:/{best_run_id}/gradient_boosting_model"
 registered_model = mlflow.register_model(model_uri, "gradient_boosting_regressor")
 print(f"Registered model version: {registered_model.version}")
