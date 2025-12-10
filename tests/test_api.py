@@ -1,11 +1,26 @@
-import requests
+"""Unit tests for the API endpoints."""
+import pytest
+from fastapi.testclient import TestClient
+from unittest.mock import Mock, patch
+from serving.app import app
 
-BASE_URL = "http://localhost:9001"
+
+@pytest.fixture
+def client():
+    """Create a test client for the FastAPI app."""
+    return TestClient(app)
 
 
-def test_predict_returns_200_and_json():
-    url = f"{BASE_URL}/predict"
+@pytest.fixture
+def mock_model():
+    """Create a mock model for testing."""
+    model = Mock()
+    model.predict = Mock(return_value=[300])
+    return model
 
+
+def test_predict_with_model(client, mock_model):
+    """Test predict endpoint with a loaded model."""
     payload = {
         "data": [
             {
@@ -19,7 +34,10 @@ def test_predict_returns_200_and_json():
         ]
     }
 
-    resp = requests.post(url, json=payload)
+    resp = client.post(
+        "/predict",
+        json=payload
+    )
 
     # Basic status + JSON checks
     assert resp.status_code == 200
