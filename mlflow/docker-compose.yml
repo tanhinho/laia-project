@@ -2,7 +2,7 @@ services:
   mlflow:
     build:
       context: .
-      dockerfile: Dockerfile.mlflow
+      dockerfile: Dockerfile
     container_name: mlflow
     ports:
       - "5050:5050"
