@@ -4,7 +4,7 @@ FROM python:3.13-slim
 RUN pip install uv
 
 WORKDIR /app
-COPY serving/* .
+COPY . .
 
 # Sync dependencies
 RUN uv sync --frozen
@@ -13,4 +13,4 @@ RUN uv sync --frozen
 EXPOSE 9001
 
 # Start App
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "9001"]
+CMD ["uv", "run", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "9001"]
