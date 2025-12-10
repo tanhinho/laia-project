@@ -27,7 +27,6 @@ def mock_preprocessor():
     return preprocessor
 
 
-@patch('serving.app.model')
 def test_predict_with_model(client, mock_model, mock_preprocessor):
     """Test predict endpoint with a loaded model."""
     payload = {
