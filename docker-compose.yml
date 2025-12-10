@@ -53,5 +53,7 @@ services:
       - mlops-net
 
 networks:
+  mlops-net:
+    driver: bridge
   monitoring_net:
     driver: bridge
