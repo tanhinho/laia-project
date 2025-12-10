@@ -9,5 +9,8 @@ data/
 *.out
 artifacts/
 
+# Pytest cache
+.pytest_cache/
+
 # Virtual environments
 .venv
