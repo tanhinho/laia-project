@@ -24,26 +24,23 @@ PICKUP_DT_COL = 'tpep_pickup_datetime'
 DROPOFF_DT_COL = 'tpep_dropoff_datetime'
 TARGET_COLUMN = 'duration_sec'
 
-# UPDATED: Load IDs and existing distance instead of coordinates
 COLUMNS_TO_LOAD = [
     PICKUP_DT_COL,
     DROPOFF_DT_COL,
     'passenger_count',
-    'RatecodeID',
+    'VendorID',
     'trip_distance',
     'PULocationID',
     'DOLocationID'
 ]
 
-# UPDATED: Use the existing pre-calculated trip distance
 NUMERIC_FEATURES = [
     'trip_distance' 
 ]
 
-# UPDATED: Treat Location IDs as categories (One-Hot Encoding)
 CATEGORICAL_FEATURES = [
     'passenger_count',
-    'RatecodeID',
+    'VendorID',
     'PULocationID',
     'DOLocationID',
     'pickup_hour',
@@ -51,10 +48,9 @@ CATEGORICAL_FEATURES = [
     'pickup_month'
 ]
 
-# Columns that need to be cast to string/category before encoding
 RAW_CATEGORICAL_COLS = [
     'passenger_count',
-    'RatecodeID',
+    'VendorID',
     'PULocationID',
     'DOLocationID'
 ]
@@ -87,7 +83,6 @@ def load_data(data_path: str, years: list, sample_size: int) -> pd.DataFrame:
         try:
             dataset = ds.dataset(file, format="parquet")
             
-            # UPDATED FILTER: Filter based on existing columns (distance > 0)
             filters = (
                 (ds.field('trip_distance') > 0) & 
                 (ds.field('trip_distance') < 100)
@@ -121,7 +116,7 @@ def load_data(data_path: str, years: list, sample_size: int) -> pd.DataFrame:
 
 def process_data(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Applies cleaning, feature engineering, and log-transform on target.
+    Applies cleaning and feature engineering.
     """
     # 1. Calculate Target Variable (Duration)
     df[PICKUP_DT_COL] = pd.to_datetime(df[PICKUP_DT_COL])
@@ -140,9 +135,9 @@ def process_data(df: pd.DataFrame) -> pd.DataFrame:
     df['pickup_month'] = df[PICKUP_DT_COL].dt.month
 
     # 5. Clean Categorical Features
-    # Convert IDs and Counts to strings so they are treated as categories
     for col in RAW_CATEGORICAL_COLS:
         if col in df.columns:
+            # Cast VendorID, etc. to string so they are treated as categories
             df[col] = df[col].fillna(-1).astype(str).astype('category')
 
     # 6. Optimize Numeric Dtypes
@@ -156,8 +151,6 @@ def build_preprocessor() -> ColumnTransformer:
     """Builds a scikit-learn ColumnTransformer for preprocessing."""
     numeric_transformer = Pipeline(steps=[('scaler', StandardScaler())])
     
-    # OneHotEncode all categories, including Location IDs
-    # handle_unknown='ignore' is crucial here in case new LocationIDs appear in test data
     categorical_transformer = Pipeline(steps=[
         ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=True))
     ])
@@ -170,6 +163,44 @@ def build_preprocessor() -> ColumnTransformer:
         remainder='drop'
     )
     return preprocessor
+
+def process_data_for_inference(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Applies feature engineering for inference (prediction) without calculating target.
+    
+    Expected Input Columns:
+    - VendorID
+    - tpep_pickup_datetime
+    - passenger_count
+    - trip_distance
+    - PULocationID
+    - DOLocationID
+    """
+    # 1. Parse pickup datetime
+    if PICKUP_DT_COL in df.columns:
+        df[PICKUP_DT_COL] = pd.to_datetime(df[PICKUP_DT_COL])
+
+        # 2. Feature Engineering (only from pickup time)
+        df['pickup_hour'] = df[PICKUP_DT_COL].dt.hour
+        df['pickup_day_of_week'] = df[PICKUP_DT_COL].dt.dayofweek
+        df['pickup_month'] = df[PICKUP_DT_COL].dt.month
+    
+    # 3. Clean Categorical Features
+    # Ensure all categorical columns are strings/categories to match training schema
+    for col in RAW_CATEGORICAL_COLS:
+        if col in df.columns:
+            df[col] = df[col].fillna(-1).astype(str).astype('category')
+        else:
+             # Just in case a column is missing, we create it with a default to avoid crashing
+             df[col] = '-1'
+             df[col] = df[col].astype('category')
+
+    # 4. Optimize Numeric Dtypes
+    for col in NUMERIC_FEATURES:
+        if col in df.columns:
+            df[col] = df[col].astype(np.float32)
+
+    return df
 
 # --- Main Function ---
 
@@ -197,9 +228,8 @@ def main(train_size: int):
     print("Transforming training data...")
     X_train = preprocessor.transform(df_train[all_features])
     
-    # LOG TRANSFORM THE TARGET
-    print("Applying Log Transform to Target...")
-    y_train = np.log1p(df_train[TARGET_COLUMN].values)
+    # Target is raw seconds (no log transform)
+    y_train = df_train[TARGET_COLUMN].values
 
     print("Saving training artifacts...")
     joblib.dump(preprocessor, os.path.join(ARTIFACTS_PATH, 'preprocessor.pkl'))
@@ -214,8 +244,8 @@ def main(train_size: int):
     df_holdout = process_data(df_holdout)
 
     X_holdout = preprocessor.transform(df_holdout[all_features])
-    # LOG TRANSFORM THE TARGET
-    y_holdout = np.log1p(df_holdout[TARGET_COLUMN].values)
+    
+    y_holdout = df_holdout[TARGET_COLUMN].values
 
     del df_holdout
 
