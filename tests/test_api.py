@@ -19,7 +19,16 @@ def mock_model():
     return model
 
 
-def test_predict_with_model(client, mock_model):
+@pytest.fixture
+def mock_preprocessor():
+    """Create a mock preprocessor for testing."""
+    preprocessor = Mock()
+    preprocessor.transform = Mock(return_value=[[0.5, 1.0, 0.0]])
+    return preprocessor
+
+
+@patch('serving.app.model')
+def test_predict_with_model(client, mock_model, mock_preprocessor):
     """Test predict endpoint with a loaded model."""
     payload = {
         "data": [
@@ -34,10 +43,13 @@ def test_predict_with_model(client, mock_model):
         ]
     }
 
-    resp = client.post(
-        "/predict",
-        json=payload
-    )
+    # Send a request to the predict endpoint using the mock model and preprocessor
+    with (patch('serving.app.model', mock_model),
+          patch('serving.app.preprocessor', mock_preprocessor)):
+        resp = client.post(
+            "/predict",
+            json=payload
+        )
 
     # Basic status + JSON checks
     assert resp.status_code == 200
