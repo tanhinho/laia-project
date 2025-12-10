@@ -3,21 +3,21 @@ import joblib
 import pandas as pd
 import mlflow.pyfunc
 from fastapi import FastAPI, HTTPException
-from schemas import InputPayload
+from .schemas import InputPayload
 from mlflow.tracking import MlflowClient
-from utils import process_data_for_inference
+from .utils import process_data_for_inference
 from prometheus_fastapi_instrumentator import Instrumentator
 from prometheus_client import Histogram, Counter
 
 
 OUTPUT_MINUTES_HISTOGRAM = Histogram(
-    'model_prediction_minutes', 
-    'Distribution of predicted duration in minutes', 
+    'model_prediction_minutes',
+    'Distribution of predicted duration in minutes',
     buckets=[1, 5, 10, 15, 20, 30, 45, 60, 90, 120]
 )
 
 INPUT_DISTANCE_HISTOGRAM = Histogram(
-    'input_feature_distance', 
+    'input_feature_distance',
     'Distribution of input trip distance',
     buckets=[0, 2, 5, 10, 20, 50, 100]
 )
@@ -52,11 +52,12 @@ preprocessor = None
 # prometheus dep
 instrumentator = Instrumentator().instrument(app)
 
+
 @app.on_event("startup")
 def load_artifacts():
     # expose metrics endpoint for scraping
     instrumentator.expose(app)
-    
+
     global model, preprocessor
     try:
         print(f"Loading model: {MODEL_NAME}@{MODEL_ALIAS}...", flush=True)
@@ -92,14 +93,14 @@ def predict(payload: InputPayload):
             status_code=503, detail="Model not loaded. Please try again later.")
 
     try:
-        
+
         data_dicts = [item.model_dump() for item in payload.data]
         df = pd.DataFrame(data_dicts)
 
         # Log key features before processing to catch raw data drift
         if 'trip_distance' in df.columns:
-             for val in df['trip_distance']:
-                 INPUT_DISTANCE_HISTOGRAM.observe(val)
+            for val in df['trip_distance']:
+                INPUT_DISTANCE_HISTOGRAM.observe(val)
 
         df_clean = process_data_for_inference(df)
         X_input = preprocessor.transform(df_clean)
