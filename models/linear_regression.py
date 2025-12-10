@@ -54,7 +54,7 @@ y_val = np.load(os.path.join(ARTIFACTS_PATH, 'y_val.npy'))
 
 print("Data loaded successfully.")
 
-best_mae = float("inf")
+best_mse = float("inf")
 best_run_id = None
 
 with mlflow.start_run() as run:
@@ -70,12 +70,12 @@ with mlflow.start_run() as run:
 
     # --- 5. Evaluate ---
     mae = mean_absolute_error(y_val, y_pred)
-    rmse = mean_squared_error(y_val, y_pred)
+    mse = mean_squared_error(y_val, y_pred)
     r2 = r2_score(y_val, y_pred)
 
     # mlflow.log_param("coeficients",beta")
     mlflow.log_metric("MAE", mae)
-    mlflow.log_metric("RMSE", rmse)
+    mlflow.log_metric("MSE", mse)
     mlflow.log_metric("R2", r2)
 
     # Ensure this path matches where preprocess.py saved it
@@ -87,19 +87,19 @@ with mlflow.start_run() as run:
     mlflow.sklearn.log_model(linear_model, "linear_regression",
                              signature=signature, input_example=X_train[:5])
 
-    if mae < best_mae:
-        best_mae = mae
+    if mse < best_mse:
+        best_mse = mse
         best_run_id = run.info.run_id
 
     print("Model and preprocessor logged to MLflow. ")
 
     print("Coefficients:", beta)
     print(f"MAE: {mae:.2f}")
-    print(f"RMSE: {rmse:.2f}")
+    print(f"MSE: {mse:.2f}")
     print(f"R²: {r2:.3f}")
 
 # Register the best model
-print(f"\nBest model: MAE={best_mae:.4f}")
+print(f"\nBest model: MAE={best_mse:.4f}")
 model_uri = f"runs:/{best_run_id}/linear_regression"
 registered_model = mlflow.register_model(model_uri, "linear_regression")
 print(f"Registered model version: {registered_model.version}")

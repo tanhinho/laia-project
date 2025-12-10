@@ -1,11 +1,13 @@
 FROM python:3.13-slim
 
+# Install uv
+RUN pip install uv
+
 WORKDIR /app
+COPY serving/* .
 
-COPY requirements.serving.txt .
-RUN pip install --no-cache-dir -r requirements.serving.txt
-
-COPY ./ .
+# Sync dependencies
+RUN uv sync --frozen
 
 # Expose FastAPI port
 EXPOSE 9001

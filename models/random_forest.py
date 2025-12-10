@@ -4,6 +4,14 @@ import scipy.sparse
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, r2_score, mean_squared_error
 import mlflow
+import itertools
+
+def expand_grid(grid):
+    keys = grid.keys()
+    vals = grid.values()
+    for combo in itertools.product(*vals):
+        yield dict(zip(keys, combo))
+
 
 mlflow.set_tracking_uri("http://10.17.0.185:5050")
 experiment_name = "random_forest"
@@ -37,6 +45,17 @@ mlflow.set_experiment(experiment_name)
 
 ARTIFACTS_PATH = 'artifacts'
 
+param_grid = {
+    "n_estimators": [100, 200, 300, 500],
+    "max_depth": [10, 20, 30],
+    "min_samples_split": [2, 5, 10],
+    "min_samples_leaf": [1, 2, 4]
+}
+
+param_combinations = list(expand_grid(param_grid))
+print(f"Total runs: {len(param_combinations)}")
+
+
 print("Loading processed data...")
 
 X_train = scipy.sparse.load_npz(os.path.join(ARTIFACTS_PATH, 'X_train.npz'))
@@ -51,49 +70,49 @@ print("Data loaded successfully.")
 
 print("Training RandomForestRegressor model...")
 
-best_mae = float("inf")
+best_mse = float("inf")
 best_run_id = None
+best_params = None
 
-with mlflow.start_run() as run:
-    rf_model = RandomForestRegressor(
-        n_estimators=200,      
-        max_depth=15,          
-        random_state=42,
-        n_jobs=-1              
-    )
+for params in param_combinations:
+    with mlflow.start_run() as run:
+        rf_model = RandomForestRegressor(      
+            random_state=42,  
+            **params            
+        )
 
-    rf_model.fit(X_train, y_train)
+        rf_model.fit(X_train, y_train)
 
-    print("Model training complete.")
+        print("Model training complete.")
 
-    # --- 3. Evaluate Model ---
+        # --- 3. Evaluate Model ---
 
-    print("Evaluating model on validation data...")
+        print("Evaluating model on validation data...")
 
-    y_pred = rf_model.predict(X_val)
+        y_pred = rf_model.predict(X_val)
 
-    mae = mean_absolute_error(y_val, y_pred)
-    rmse = mean_squared_error(y_val, y_pred)
-    r2 = r2_score(y_val, y_pred)
+        mae = mean_absolute_error(y_val, y_pred)
+        mse = mean_squared_error(y_val, y_pred)
+        r2 = r2_score(y_val, y_pred)
 
-    mlflow.log_metric("MAE", mae)
-    mlflow.log_metric("RMSE", rmse)
-    mlflow.log_metric("R2", r2)
+        mlflow.log_metric("MAE", mae)
+        mlflow.log_metric("MSE", mse)
+        mlflow.log_metric("R2", r2)
 
-    signature = mlflow.models.infer_signature(X_train, rf_model.predict(X_train))
-    mlflow.sklearn.log_model(rf_model, "random_forest", signature=signature, input_example=X_train[:5])
+        signature = mlflow.models.infer_signature(X_train, rf_model.predict(X_train))
+        mlflow.sklearn.log_model(rf_model, "random_forest", signature=signature, input_example=X_train[:5])
 
-    if mae < best_mae:
-        best_mae = mae
-        best_run_id = run.info.run_id
+        if mse < best_mse:
+            best_mse = mse
+            best_run_id = run.info.run_id
 
-    print("--- Model Evaluation ---")
-    print(f"Mean Absolute Error (MAE): {mae:.2f} seconds") 
-    print(f"Root Mean Squared Error (RMSE): {rmse:.2f} seconds")
-    print(f"R² Score: {r2:.3f}")
+        print("--- Model Evaluation ---")
+        print(f"MAE: {mae:.2f} seconds") 
+        print(f"MSE: {mse:.2f} seconds")
+        print(f"R² Score: {r2:.3f}")
 
 # Register the best model
-print(f"\nBest model: MAE={best_mae:.4f}")
+print(f"\nBest model: MSE={best_mse:.4f}")
 model_uri = f"runs:/{best_run_id}/random_forest"
 registered_model = mlflow.register_model(model_uri, "random_forest")
 print(f"Registered model version: {registered_model.version}")    

@@ -1,13 +1,13 @@
 FROM python:3.13-slim
 
+# Install uv
+RUN pip install uv
+
 WORKDIR /app
+COPY models/* .
 
-# Install system dependencies
-COPY requirements.training.txt .
-RUN pip install --no-cache-dir -r requirements.training.txt
-
-# Copy code
-COPY ./ .
+# Sync dependencies
+RUN uv sync --frozen
 
 # Run the pipeline. 
 # We chain the scripts: first preprocess (generate artifacts), then train (log artifacts)
