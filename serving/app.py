@@ -3,9 +3,13 @@ import joblib
 import pandas as pd
 import mlflow.pyfunc
 from fastapi import FastAPI, HTTPException
-from .schemas import InputPayload
+try:
+    from .schemas import InputPayload
+    from .utils import process_data_for_inference
+except ImportError:
+    from schemas import InputPayload
+    from utils import process_data_for_inference
 from mlflow.tracking import MlflowClient
-from .utils import process_data_for_inference
 from prometheus_fastapi_instrumentator import Instrumentator
 from prometheus_client import Histogram, Counter
 
@@ -84,6 +88,15 @@ def load_artifacts():
     except Exception as e:
         print(f"Error loading artifacts: {e}", flush=True)
         raise
+
+
+@app.get("/health")
+def health():
+    """Health check endpoint to verify service and model status."""
+    return {
+        "status": "healthy",
+        "model_loaded": model is not None and preprocessor is not None
+    }
 
 
 @app.post("/predict")
