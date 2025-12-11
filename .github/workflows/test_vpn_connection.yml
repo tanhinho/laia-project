@@ -1,0 +1,35 @@
+name: Test VPN Connection
+run-name: "${{ github.workflow }}"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-vpn:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install OpenVPN
+        run: |
+          sudo apt update
+          sudo apt install -y openvpn openvpn-systemd-resolved
+
+      # If OVPN_CONFIG_FILE is base64 of your .ovpn, decode it
+      - name: Create OVPN file
+        run: echo ${{ secrets.OVPN_CONFIG_FILE }} > DEI.ovpn
+
+      - name: Create auth file
+        run: |
+          echo "${{ secrets.OVPN_USERNAME }}" > vpn-auth.txt
+          echo "${{ secrets.OVPN_PASSWORD }}" >> vpn-auth.txt
+
+      - name: Connect to VPN (daemon)
+        run: |
+          sudo openvpn --config DEI.ovpn --auth-user-pass vpn-auth.txt \
+                       --daemon --log /tmp/openvpn.log --verb 3
+          sleep 15
+          echo "=== OpenVPN log ==="
+          tail -n 40 /tmp/openvpn.log || true
+
+      - name: Ping test
+        run: ping ${{ secrets.SERVING_VM_HOST }}
