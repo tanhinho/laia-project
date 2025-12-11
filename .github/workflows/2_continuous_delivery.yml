@@ -58,10 +58,6 @@ jobs:
           echo "${{ secrets.OVPN_PASSWORD }}" >> vpn-auth.txt
           chmod 600 vpn-auth.txt
 
-      - name: Debug VPN connection
-        run: |
-          sudo timeout 60 openvpn --config DEI.ovpn --auth-user-pass vpn-auth.txt --verb 4
-
       # Start OpenVPN in the background
       - name: Connect to VPN via openvpn
         run: |
