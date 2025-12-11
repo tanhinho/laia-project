@@ -41,21 +41,6 @@ jobs:
       # Download models image built in the previous stage
       - run: docker pull ${{ env.REGISTRY }}/${{ github.repository }}/models:${{ github.sha }}
 
-      # Download TLC dataset for years 2011, 2012, 2013
-      - name: Download TLC dataset (2011-2013)
-        run: |
-          mkdir -p $(pwd)/data/2011 $(pwd)/data/2012 $(pwd)/data/2013
-          base="https://d37ci6vzurychx.cloudfront.net/trip-data"
-
-          for year in 2011 2012 2013; do
-            for month in {01..12}; do
-              file="yellow_tripdata_${year}-${month}.parquet"
-              url="$base/$file"
-              echo "Downloading $file"
-              curl -sSL "$url" -o "$(pwd)/data/${year}/$file"
-            done
-          done
-
       # Run models container which runs the models script within
       # The models script will select the "best" model and tag it with the sha of the commit in mlflow
       - name: Run models
@@ -66,7 +51,6 @@ jobs:
           COMMIT_SHA: ${{ github.sha }}
         run: |
           docker run --rm \
-            -v $(pwd)/data:/app/data \
             -e MLFLOW_TRACKING_URI \
             -e MLFLOW_MODEL_NAME \
             -e MLFLOW_EXPERIMENT_NAME \
