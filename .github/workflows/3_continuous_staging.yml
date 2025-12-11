@@ -36,10 +36,11 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pull serving and mlflow images
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ github.repository }}/serving:staging
 
-      - run: docker pull ${{ env.REGISTRY }}/${{ github.repository }}/serving:staging
-
-      # ===================== Set up VPN to access DEI network =====================
+      # ===================== Setup VPN to access DEI network =====================
       # Install VPN client
       - name: Install OpenVPN
         run: |
@@ -63,28 +64,55 @@ jobs:
             exit 1
           fi
 
-      # ===================== Start the serving container in the staging VM =====================
+      # ===================== Setup serving container =====================
+      - name: Save serving image to tar
+        run: docker save ${{ env.REGISTRY }}/${{ github.repository }}/serving:staging -o /tmp/serving_staging.tar
+
+      - name: Copy serving image to staging VM
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVING_VM_HOST }}
+          username: ${{ secrets.SERVING_VM_USERNAME }}
+          password: ${{ secrets.SERVING_VM_PASSWORD }}
+          source: /tmp/serving_staging.tar
+          target: ~/docker_images/serving_staging.tar
+
+      - name: Connect to DEI server via SSH and prepare environment
+        uses: appleboy/ssh-action@v1.2.4
+        with:
+          host: ${{ secrets.SERVING_VM_HOST }}
+          username: ${{ secrets.SERVING_VM_USERNAME }}
+          password: ${{ secrets.SERVING_VM_PASSWORD }}
+          script: |
+            # Stop and remove existing serving container if running
+            docker rm -f serving-app || true
+            # Load the serving image from the transferred tar file
+            docker load --input ~/serving_staging.tar
+
       - name: Start serving container
         env:
           MLFLOW_TRACKING_URI: ${{ env.MLFLOW_TRACKING_URI }}
-          MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_USERNAME }}
-          MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }}
           MODEL_ALIAS: ${{ github.sha }}
           MLFLOW_MODEL_NAME: ${{ env.MLFLOW_MODEL_NAME }}
-        run: |
-          docker run -d \
-            --name serving-app \
-            -p 8080:8080 \
-            -e MLFLOW_TRACKING_URI \
-            -e MLFLOW_TRACKING_USERNAME \
-            -e MLFLOW_TRACKING_PASSWORD \
-            -e MODEL_ALIAS \
-            -e MLFLOW_MODEL_NAME \
-            ${{ env.REGISTRY }}/${{ github.repository }}/serving:staging
+        uses: appleboy/ssh-action@v1.2.4
+        with:
+          host: ${{ secrets.SERVING_VM_HOST }}
+          username: ${{ secrets.SERVING_VM_USERNAME }}
+          password: ${{ secrets.SERVING_VM_PASSWORD }}
+          envs: MLFLOW_TRACKING_URI,MODEL_ALIAS,MLFLOW_MODEL_NAME
+          script: |
+            docker run -d \
+              --name serving-app \
+              -p 8080:8080 \
+              -e MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI} \
+              -e MODEL_ALIAS=${MODEL_ALIAS} \
+              -e MLFLOW_MODEL_NAME=${MLFLOW_MODEL_NAME} \
+              ${{ env.REGISTRY }}/${{ github.repository }}/serving:staging
 
-          # Wait for Flask to be ready
-          sleep 10
+            # Wait for FastAPI to be ready
+            sleep 10
 
+      # ===================== Run tests against staging environment =====================
       # Here we are just running the same E2E tests, but in real systems we would run
       # the system in a preproduction environment, that would manually or automatically
       # apply  A/B testing, shadow testing and other approaches to measure
@@ -96,8 +124,6 @@ jobs:
       - name: Promote model to production
         env:
           MLFLOW_TRACKING_URI: ${{ env.MLFLOW_TRACKING_URI }}
-          MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_USERNAME }}
-          MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }}
           FROM_ALIAS: staging
           TO_ALIAS: production
         run: uv run python model-promotion/promote_model.py
