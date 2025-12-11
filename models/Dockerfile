@@ -11,4 +11,4 @@ RUN uv sync --frozen
 
 # Run the pipeline. 
 # We chain the scripts: first download data, then preprocess (generate artifacts) and finally train (log artifacts)
-CMD uv run download_data.py && uv run python preprocess.py --train-size 10000 && uv run python linear_regression.py
+CMD uv run download_data.py && uv run python preprocess.py --train-size 1 && uv run python linear_regression.py
