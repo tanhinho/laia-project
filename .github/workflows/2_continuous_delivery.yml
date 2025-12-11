@@ -135,4 +135,6 @@ jobs:
           MLFLOW_MODEL_NAME: ${{ env.MLFLOW_MODEL_NAME }}
           FROM_ALIAS: ${{ github.sha }}
           TO_ALIAS: staging
-        run: uv run python model-promotion/promote_model.py
+        run: |
+          set -xe
+          uv run python -u model-promotion/promote_model.py
