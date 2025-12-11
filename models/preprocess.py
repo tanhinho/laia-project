@@ -13,7 +13,7 @@ from sklearn.model_selection import train_test_split
 import argparse
 
 # --- Configuration ---
-DATA_PATH = 'data'
+DATA_PATH = os.getenv('DATA_PATH', 'data')
 ARTIFACTS_PATH = 'artifacts'
 
 TRAIN_YEARS = ['2011', '2012']
