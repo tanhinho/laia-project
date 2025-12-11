@@ -24,10 +24,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.13" }
-      - run: pip install uv
-      - run: uv sync
-      - run: uv run pytest tests/test_api.py -v
-      - run: uv run pytest tests/test_train.py -v
+      - name: Setup python environment
+        run: |
+          pip install uv
+          uv sync
+      - name: Run unit tests
+        run: |
+          uv run pytest tests/test_api.py -v
+          uv run pytest tests/test_train.py -v
 
   build-images:
     # Passed tests, now build docker images for models, serving and mlflow
@@ -47,7 +51,8 @@ jobs:
           push: false
           tags: models:${{ github.sha }}
           outputs: type=docker,dest=/tmp/models.tar
-      - run: docker load --input /tmp/models.tar
+      - name: Load models image
+        run: docker load --input /tmp/models.tar
 
       # Build serving image and upload to artifacts for use in continuous delivery
       - name: Build serving image
@@ -59,7 +64,9 @@ jobs:
           push: false
           tags: serving:${{ github.sha }}
           outputs: type=docker,dest=/tmp/serving.tar
-      - run: docker load --input /tmp/serving.tar
+      - name: Load serving image
+        run: docker load --input /tmp/serving.tar
+
       # Log in to GitHub Container Registry (GHCR)
       # This is the repository where we will upload our images
       - uses: docker/login-action@v3

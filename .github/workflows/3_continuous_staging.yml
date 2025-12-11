@@ -27,7 +27,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.13" }
-      - run: pip install uv
+      - name: Setup python environment
+        run: |
+          pip install uv
+          uv sync
 
       # Log in to GitHub Container Registry (GHCR)
       # We will get the serving image with tag staging from here to validate
@@ -114,7 +117,8 @@ jobs:
       # the system in a preproduction environment, that would manually or automatically
       # apply  A/B testing, shadow testing and other approaches to measure
       # and validate the performance of the model before moving to production
-      - run: uv run pytest tests/test_e2e.py -v
+      - name: Run Staging tests
+        run: uv run pytest tests/test_e2e.py -v
 
       # When reaching the stage both the serving and the model will have passed
       # the necessary tests and we promote to production

@@ -27,8 +27,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.13" }
-      - run: pip install uv
-      - run: uv sync
+      - name: Setup python environment
+        run: |
+          pip install uv
+          uv sync
 
       # Log in to GitHub Container Registry (GHCR)
       # We will get the serving image with tag staging from here to validate
@@ -39,7 +41,8 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # Download models image built in the previous stage
-      - run: docker pull ${{ env.REGISTRY }}/${{ github.repository }}/models:${{ github.sha }}
+      - name: Pull models image
+        run: docker pull ${{ env.REGISTRY }}/${{ github.repository }}/models:${{ github.sha }}
 
       - name: Install OpenVPN
         run: |
@@ -78,7 +81,8 @@ jobs:
             ${{ env.REGISTRY }}/${{ github.repository }}/models:${{ github.sha }}
 
       # Download serving image built in the previous stage
-      - run: docker pull ${{ env.REGISTRY }}/${{ github.repository }}/serving:${{ github.sha }}
+      - name: Pull serving image
+        run: docker pull ${{ env.REGISTRY }}/${{ github.repository }}/serving:${{ github.sha }}
 
       # Start serving image
       # It is configured to load the model passed in env variable MLFLOW_MODEL_NAME and alias MODEL_ALIAS
