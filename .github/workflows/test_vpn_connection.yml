@@ -16,7 +16,7 @@ jobs:
 
       # If OVPN_CONFIG_FILE is base64 of your .ovpn, decode it
       - name: Create OVPN file
-        run: echo ${{ secrets.OVPN_CONFIG_FILE }} > DEI.ovpn
+        run: echo "${{ secrets.OVPN_CONFIG_FILE }}" > DEI.ovpn
 
       - name: Create auth file
         run: |
