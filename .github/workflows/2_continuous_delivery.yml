@@ -58,11 +58,12 @@ jobs:
           echo "${{ secrets.OVPN_PASSWORD }}" >> vpn-auth.txt
           chmod 600 vpn-auth.txt
 
-      # Start OpenVPN in the background
-      - name: Connect to VPN via openvpn
-        run: |
-          sudo openvpn --config DEI.ovpn --auth-user-pass vpn-auth.txt --daemon
-          sleep 15
+      - name: Connect to VPN
+        uses: "kota65535/github-openvpn-connect-action@v3.1.0"
+        with:
+          config_file: DEI.ovpn
+          username: ${{ secrets.OVPN_USERNAME }}
+          password: ${{ secrets.OVPN_PASSWORD }}
 
       # Run models container which runs the models script within
       # The models script will select the "best" model and tag it with the sha of the commit in mlflow
