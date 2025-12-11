@@ -27,8 +27,9 @@ jobs:
         run: |
           sudo openvpn --config DEI.ovpn --auth-user-pass vpn-auth.txt \
                        --daemon --log /tmp/openvpn.log --verb 3
-          echo "=== OpenVPN log ==="
-          tail -n 40 /tmp/openvpn.log || true
+          sleep 15s
 
       - name: Ping test
-        run: ping -c 4 ${{ secrets.SERVING_VM_HOST }}
+        run: |
+          set -x
+          ping -c 4 ${{ secrets.SERVING_VM_HOST }} || echo "ping failed with code $?"
