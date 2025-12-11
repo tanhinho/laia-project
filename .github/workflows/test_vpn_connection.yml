@@ -27,7 +27,6 @@ jobs:
         run: |
           sudo openvpn --config DEI.ovpn --auth-user-pass vpn-auth.txt \
                        --daemon --log /tmp/openvpn.log --verb 3
-          sleep 15
           echo "=== OpenVPN log ==="
           tail -n 40 /tmp/openvpn.log || true
 
