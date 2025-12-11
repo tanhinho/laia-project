@@ -64,16 +64,6 @@ jobs:
           sudo openvpn --config DEI.ovpn --auth-user-pass vpn-auth.txt --daemon
           sleep 15
 
-      # Verify VPN
-      - name: Verify VPN connection
-        run: |
-          if ip addr show tun0 >/dev/null 2>&1; then
-            echo "VPN is up."
-          else
-            echo "VPN is NOT up. Exiting."
-            exit 1
-          fi
-
       # Run models container which runs the models script within
       # The models script will select the "best" model and tag it with the sha of the commit in mlflow
       - name: Run models

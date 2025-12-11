@@ -64,16 +64,6 @@ jobs:
           sudo openvpn --config DEI.ovpn --auth-user-pass vpn-auth.txt --daemon
           sleep 15
 
-      # Verify VPN
-      - name: Verify VPN connection
-        run: |
-          if ip addr show tun0 >/dev/null 2>&1; then
-            echo "VPN is up."
-          else
-            echo "VPN is NOT up. Exiting."
-            exit 1
-          fi
-
       # ===================== Setup serving container =====================
       - name: Save serving image to tar
         run: docker save ${{ env.REGISTRY }}/${{ github.repository }}/serving:staging -o /tmp/serving_staging.tar
