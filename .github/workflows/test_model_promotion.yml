@@ -1,0 +1,56 @@
+name: Test Model Promotion
+run-name: "${{ github.workflow }}"
+
+on:
+  workflow_dispatch:
+
+env:
+  REGISTRY: ${{ vars.REGISTRY }}
+  MLFLOW_TRACKING_URI: ${{ vars.MLFLOW_TRACKING_URI }}
+  MLFLOW_EXPERIMENT_NAME: ${{ vars.MLFLOW_EXPERIMENT_NAME }}
+  MLFLOW_MODEL_NAME: ${{ vars.MLFLOW_MODEL_NAME }}
+
+jobs:
+  test-model-promotion:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13" }
+
+      - name: Setup python environment
+        run: |
+          pip install uv
+          uv sync
+
+      # VPN so we can reach MLflow
+      - name: Install OpenVPN
+        run: |
+          sudo apt update
+          sudo apt install -y openvpn openvpn-systemd-resolved
+
+      - name: Create OVPN file
+        run: echo "${{ secrets.OVPN_CONFIG_FILE }}" > DEI.ovpn
+
+      - name: Connect to VPN
+        uses: "kota65535/github-openvpn-connect-action@v2"
+        with:
+          config_file: DEI.ovpn
+          username: ${{ secrets.OVPN_USERNAME }}
+          password: ${{ secrets.OVPN_PASSWORD }}
+
+      - name: Ping test
+        run: |
+          set -x
+          ping -c 4 ${{ secrets.SERVING_VM_HOST }} || echo "ping failed with code $?"
+
+      - name: Promote model (test)
+        env:
+          MLFLOW_TRACKING_URI: ${{ env.MLFLOW_TRACKING_URI }}
+          MLFLOW_MODEL_NAME: ${{ env.MLFLOW_MODEL_NAME }}
+          FROM_ALIAS: ${{ github.sha }}
+          TO_ALIAS: production
+        run: |
+          set -xe
+          uv run python -u model-promotion/promote_model.py
