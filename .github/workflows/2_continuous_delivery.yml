@@ -57,16 +57,6 @@ jobs:
           config_file: DEI.ovpn
           username: ${{ secrets.OVPN_USERNAME }}
           password: ${{ secrets.OVPN_PASSWORD }}
-      # Verify VPN connection
-      - name: Verify VPN connection
-        # ">/dev/null 2>&1" is used to suppress output. We only care if the command succeeds or fails
-        run: |
-          if ip addr show tun0 >/dev/null 2>&1; then
-            echo "VPN is up."
-          else
-            echo "VPN is NOT up. Exiting."
-            exit 1
-          fi
 
       # Run models container which runs the models script within
       # The models script will select the "best" model and tag it with the sha of the commit in mlflow
