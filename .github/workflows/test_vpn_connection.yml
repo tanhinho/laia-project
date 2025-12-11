@@ -18,11 +18,6 @@ jobs:
       - name: Create OVPN file
         run: echo "${{ secrets.OVPN_CONFIG_FILE }}" > DEI.ovpn
 
-      - name: Create auth file
-        run: |
-          echo "${{ secrets.OVPN_USERNAME }}" > vpn-auth.txt
-          echo "${{ secrets.OVPN_PASSWORD }}" >> vpn-auth.txt
-
       - name: Connect to VPN
         uses: "kota65535/github-openvpn-connect-action@v2"
         with:
