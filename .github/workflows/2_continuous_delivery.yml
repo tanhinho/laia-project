@@ -52,7 +52,7 @@ jobs:
               file="yellow_tripdata_${year}-${month}.parquet"
               url="$base/$file"
               echo "Downloading $file"
-              curl -SL "$url" -o "data/${year}/$file"
+              curl -sSL "$url" -o "data/${year}/$file"
             done
           done
 
