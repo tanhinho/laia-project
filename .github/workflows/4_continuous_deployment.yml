@@ -52,7 +52,7 @@ jobs:
 
       # Recreate the .ovpn file from the base64 secret
       - name: Create OVPN file
-        run: echo "${{ secrets.OVPN_CONFIG_FILE }}" | base64 -d > DEI.ovpn
+        run: echo "${{ secrets.OVPN_CONFIG_FILE }}" > DEI.ovpn
 
       # Create auth file for username/password
       - name: Create auth file
