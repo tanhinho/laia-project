@@ -60,19 +60,6 @@ jobs:
           tags: serving:${{ github.sha }}
           outputs: type=docker,dest=/tmp/serving.tar
       - run: docker load --input /tmp/serving.tar
-
-      # Build mlflow image and upload to artifacts for use in continuous delivery
-      - name: Build mlflow image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./mlflow/Dockerfile
-          platforms: linux/amd64
-          push: false
-          tags: mlflow:${{ github.sha }}
-          outputs: type=docker,dest=/tmp/mlflow.tar
-      - run: docker load --input /tmp/mlflow.tar
-
       # Log in to GitHub Container Registry (GHCR)
       # This is the repository where we will upload our images
       - uses: docker/login-action@v3
@@ -95,10 +82,3 @@ jobs:
         run: |
           docker tag serving:${{ github.sha }} ${{ env.REGISTRY }}/${{ github.repository }}/serving:${{ github.sha }}
           docker push ${{ env.REGISTRY }}/${{ github.repository }}/serving:${{ github.sha }}
-
-      # Tag mlflow image with current commit sha
-      # Push mlflow image to repository
-      - name: Push mlflow image
-        run: |
-          docker tag mlflow:${{ github.sha }} ${{ env.REGISTRY }}/${{ github.repository }}/mlflow:${{ github.sha }}
-          docker push ${{ env.REGISTRY }}/${{ github.repository }}/mlflow:${{ github.sha }}
