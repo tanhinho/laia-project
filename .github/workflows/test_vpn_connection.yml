@@ -32,4 +32,4 @@ jobs:
           tail -n 40 /tmp/openvpn.log || true
 
       - name: Ping test
-        run: ping -c 4 ${{ secrets.SERVING_VM_HOST }}
+        run: ping ${{ secrets.SERVING_VM_HOST }}
