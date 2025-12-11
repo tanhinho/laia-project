@@ -41,25 +41,16 @@ jobs:
       # Download models image built in the previous stage
       - run: docker pull ${{ env.REGISTRY }}/${{ github.repository }}/models:${{ github.sha }}
 
-      # Install OpenVPN
       - name: Install OpenVPN
         run: |
           sudo apt update
           sudo apt install -y openvpn openvpn-systemd-resolved
 
-      # Recreate the .ovpn file from the base64 secret
       - name: Create OVPN file
         run: echo "${{ secrets.OVPN_CONFIG_FILE }}" > DEI.ovpn
 
-      # Create auth file for username/password
-      - name: Create auth file
-        run: |
-          echo "${{ secrets.OVPN_USERNAME }}" > vpn-auth.txt
-          echo "${{ secrets.OVPN_PASSWORD }}" >> vpn-auth.txt
-          chmod 600 vpn-auth.txt
-
       - name: Connect to VPN
-        uses: "kota65535/github-openvpn-connect-action@v3.1.0"
+        uses: "kota65535/github-openvpn-connect-action@v2"
         with:
           config_file: DEI.ovpn
           username: ${{ secrets.OVPN_USERNAME }}
