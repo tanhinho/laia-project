@@ -52,8 +52,6 @@ jobs:
         run: |
           docker run --rm \
             -e MLFLOW_TRACKING_URI \
-            -e MLFLOW_TRACKING_USERNAME \
-            -e MLFLOW_TRACKING_PASSWORD \
             -e MLFLOW_MODEL_NAME \
             -e MLFLOW_EXPERIMENT_NAME \
             -e COMMIT_SHA \
