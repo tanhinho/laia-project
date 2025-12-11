@@ -43,11 +43,8 @@ jobs:
 
       # Download TLC dataset for years 2011, 2012, 2013
       - name: Download TLC dataset (2011-2013)
-        env:
-          DATA_PATH: ${{ env.DATA_PATH }}
         run: |
-          # Use DATA_PATH to store data
-          mkdir -p $DATA_PATH/2011 $DATA_PATH/2012 $DATA_PATH/2013
+          mkdir -p data/2011 data/2012 data/2013
           base="https://d37ci6vzurychx.cloudfront.net/trip-data"
 
           for year in 2011 2012 2013; do
@@ -55,7 +52,7 @@ jobs:
               file="yellow_tripdata_${year}-${month}.parquet"
               url="$base/$file"
               echo "Downloading $file"
-              curl -SL "$url" -o "$DATA_PATH/${year}/$file"
+              curl -SL "$url" -o "data/${year}/$file"
             done
           done
 
