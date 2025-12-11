@@ -42,11 +42,6 @@ jobs:
       - run: docker pull ${{ env.REGISTRY }}/${{ github.repository }}/models:${{ github.sha }}
 
       # ===================== Setup VPN to access DEI network =====================
-      # Install VPN client
-      - name: Install OpenVPN
-        run: |
-          sudo apt update
-          sudo apt install -y openvpn openvpn-systemd-resolved
       # Connect to the VPN using the provided OVPN config and secrets
       - name: Connect to VPN
         uses: "kota65535/github-openvpn-connect-action@v2"

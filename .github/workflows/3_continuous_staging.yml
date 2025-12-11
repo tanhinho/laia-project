@@ -41,11 +41,6 @@ jobs:
           docker pull ${{ env.REGISTRY }}/${{ github.repository }}/serving:staging
 
       # ===================== Setup VPN to access DEI network =====================
-      # Install VPN client
-      - name: Install OpenVPN
-        run: |
-          sudo apt update
-          sudo apt install -y openvpn openvpn-systemd-resolved
       # Connect to the VPN using the provided OVPN config and secrets
       - name: Connect to VPN
         uses: "kota65535/github-openvpn-connect-action@v2"
@@ -104,9 +99,9 @@ jobs:
             docker run -d \
               --name serving-app \
               -p 8080:8080 \
-              -e MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI} \
-              -e MODEL_ALIAS=${MODEL_ALIAS} \
-              -e MLFLOW_MODEL_NAME=${MLFLOW_MODEL_NAME} \
+              -e MLFLOW_TRACKING_URI \
+              -e MODEL_ALIAS \
+              -e MLFLOW_MODEL_NAME \
               ${{ env.REGISTRY }}/${{ github.repository }}/serving:staging
 
             # Wait for FastAPI to be ready
