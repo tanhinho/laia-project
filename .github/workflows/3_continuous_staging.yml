@@ -41,28 +41,25 @@ jobs:
           docker pull ${{ env.REGISTRY }}/${{ github.repository }}/serving:staging
 
       # ===================== Setup VPN to access DEI network =====================
-      # Install OpenVPN
       - name: Install OpenVPN
         run: |
           sudo apt update
           sudo apt install -y openvpn openvpn-systemd-resolved
 
-      # Recreate the .ovpn file from the base64 secret
       - name: Create OVPN file
         run: echo "${{ secrets.OVPN_CONFIG_FILE }}" > DEI.ovpn
 
-      # Create auth file for username/password
-      - name: Create auth file
-        run: |
-          echo "${{ secrets.OVPN_USERNAME }}" > vpn-auth.txt
-          echo "${{ secrets.OVPN_PASSWORD }}" >> vpn-auth.txt
-          chmod 600 vpn-auth.txt
+      - name: Connect to VPN
+        uses: "kota65535/github-openvpn-connect-action@v2"
+        with:
+          config_file: DEI.ovpn
+          username: ${{ secrets.OVPN_USERNAME }}
+          password: ${{ secrets.OVPN_PASSWORD }}
 
-      # Start OpenVPN in the background
-      - name: Connect to VPN via openvpn
+      - name: Ping test
         run: |
-          sudo openvpn --config DEI.ovpn --auth-user-pass vpn-auth.txt --daemon
-          sleep 15
+          set -x
+          ping -c 4 ${{ secrets.SERVING_VM_HOST }} || echo "ping failed with code $?"
 
       # ===================== Setup serving container =====================
       - name: Save serving image to tar
