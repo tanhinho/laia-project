@@ -23,11 +23,12 @@ jobs:
           echo "${{ secrets.OVPN_USERNAME }}" > vpn-auth.txt
           echo "${{ secrets.OVPN_PASSWORD }}" >> vpn-auth.txt
 
-      - name: Connect to VPN (daemon)
-        run: |
-          sudo openvpn --config DEI.ovpn --auth-user-pass vpn-auth.txt \
-                       --daemon --log /tmp/openvpn.log --verb 3
-          sleep 15s
+      - name: Connect to VPN
+        uses: "kota65535/github-openvpn-connect-action@v2"
+        with:
+          config_file: DEI.ovpn
+          username: ${{ secrets.OVPN_USERNAME }}
+          password: ${{ secrets.OVPN_PASSWORD }}
 
       - name: Ping test
         run: |
