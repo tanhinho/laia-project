@@ -44,11 +44,19 @@ jobs:
       - run: docker pull ${{ env.REGISTRY }}/${{ github.repository }}/serving:production
 
       # ===================== Setup VPN to access DEI network =====================
+      - name: Install OpenVPN
+        run: |
+          sudo apt update
+          sudo apt install -y openvpn openvpn-systemd-resolved
+
+      - name: Create OVPN file
+        run: echo "${{ secrets.OVPN_CONFIG_FILE }}" | base64 -d > DEI.ovpn
+
       # Connect to the VPN using the provided OVPN config and secrets
       - name: Connect to VPN
         uses: "kota65535/github-openvpn-connect-action@v2"
         with:
-          config_file: ${{ secrets.OVPN_CONFIG_FILE }}
+          config_file: DEI.ovpn
           username: ${{ secrets.OVPN_USERNAME }}
           password: ${{ secrets.OVPN_PASSWORD }}
       # Verify VPN connection
