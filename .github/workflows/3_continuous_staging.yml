@@ -86,7 +86,7 @@ jobs:
           password: ${{ secrets.SERVING_VM_PASSWORD }}
           script: |
             # Stop and remove existing serving container if running
-            docker rm -f serving-app || true
+            docker rm -f serving-app-staging || true
             # Load the serving image from the transferred tar file
             docker load --input ~/docker_images/serving_staging.tar
 
@@ -103,7 +103,7 @@ jobs:
           envs: MLFLOW_TRACKING_URI,MODEL_ALIAS,MLFLOW_MODEL_NAME
           script: |
             docker run -d \
-              --name serving-app \
+              --name serving-app-staging \
               -p 8080:8080 \
               -e MLFLOW_TRACKING_URI \
               -e MODEL_ALIAS \
