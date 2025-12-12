@@ -63,8 +63,31 @@ jobs:
           set -x
           ping -c 4 ${{ secrets.SERVING_VM_HOST }} || echo "ping failed with code $?"
 
-      - run: docker stop serving-app || true
-      - run: docker rm serving-app || true
+      # ===================== Setup serving container =====================
+      - name: Save serving image to tar
+        run: docker save ${{ env.REGISTRY }}/${{ github.repository }}/serving:production -o /tmp/serving_production.tar
+
+      - name: Copy serving image to production VM
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVING_VM_HOST }}
+          username: ${{ secrets.SERVING_VM_USERNAME }}
+          password: ${{ secrets.SERVING_VM_PASSWORD }}
+          source: /tmp/serving_production.tar
+          target: ~/docker_images
+          strip_components: 1
+
+      - name: Connect to DEI server via SSH and prepare environment
+        uses: appleboy/ssh-action@v1.2.4
+        with:
+          host: ${{ secrets.SERVING_VM_HOST }}
+          username: ${{ secrets.SERVING_VM_USERNAME }}
+          password: ${{ secrets.SERVING_VM_PASSWORD }}
+          script: |
+            # Stop and remove existing serving container if running
+            docker rm -f serving-app || true
+            # Load the serving image from the transferred tar file
+            docker load --input ~/docker_images/serving_production.tar
 
       - name: Run production on remote server
         env:
