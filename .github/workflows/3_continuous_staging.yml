@@ -87,7 +87,7 @@ jobs:
             # Stop and remove existing serving container if running
             docker rm -f serving-app || true
             # Load the serving image from the transferred tar file
-            docker load --input ~/serving_staging.tar
+            docker load --input ~/docker_images/serving_staging.tar
 
       - name: Start serving container
         env:
