@@ -7,6 +7,11 @@ from sklearn.model_selection import GridSearchCV
 import mlflow
 import itertools
 
+COMMIT_SHA = os.getenv('COMMIT_SHA')
+if not COMMIT_SHA:
+    raise EnvironmentError("Missing required env var: COMMIT_SHA")
+
+
 def expand_grid(grid):
     keys = grid.keys()
     vals = grid.values()
@@ -118,4 +123,18 @@ for params in param_combinations:
 print(f"\nBest model: MSE={best_mse:.4f}")
 model_uri = f"runs:/{best_run_id}/gradient_boosting_model"
 registered_model = mlflow.register_model(model_uri, "gradient_boosting_regressor")
+
+try:
+    client = mlflow.tracking.MlflowClient()
+    client.set_registered_model_alias(
+        name=experiment_name, alias="staging", version=registered_model.version
+    )
+
+    client.set_registered_model_alias(
+        name=experiment_name, alias=COMMIT_SHA, version=registered_model.version
+    )
+except Exception as e:
+    print(f"Could not set model alias: {e}")
+    raise e
+
 print(f"Registered model version: {registered_model.version}")

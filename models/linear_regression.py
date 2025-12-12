@@ -10,6 +10,10 @@ import mlflow
 mlflow.set_tracking_uri(
     os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5050"))
 
+COMMIT_SHA = os.getenv('COMMIT_SHA')
+if not COMMIT_SHA:
+    raise EnvironmentError("Missing required env var: COMMIT_SHA")
+
 experiment_name = "linear_regression"
 
 
@@ -102,4 +106,18 @@ with mlflow.start_run() as run:
 print(f"\nBest model: MAE={best_mse:.4f}")
 model_uri = f"runs:/{best_run_id}/linear_regression"
 registered_model = mlflow.register_model(model_uri, "linear_regression")
+
+try:
+    client = mlflow.tracking.MlflowClient()
+    client.set_registered_model_alias(
+        name=experiment_name, alias="staging", version=registered_model.version
+    )
+
+    client.set_registered_model_alias(
+        name=experiment_name, alias=COMMIT_SHA, version=registered_model.version
+    )
+except Exception as e:
+    print(f"Could not set model alias: {e}")
+    raise e
+
 print(f"Registered model version: {registered_model.version}")
