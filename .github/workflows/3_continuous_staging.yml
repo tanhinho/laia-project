@@ -75,7 +75,8 @@ jobs:
           username: ${{ secrets.SERVING_VM_USERNAME }}
           password: ${{ secrets.SERVING_VM_PASSWORD }}
           source: /tmp/serving_staging.tar
-          target: ~/docker_images/
+          target: ~/docker_images
+          strip_components: 2
 
       - name: Connect to DEI server via SSH and prepare environment
         uses: appleboy/ssh-action@v1.2.4
