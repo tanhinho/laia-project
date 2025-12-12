@@ -39,7 +39,7 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Pull serving and mlflow images
+      - name: Pull serving image
         run: |
           docker pull ${{ env.REGISTRY }}/${{ github.repository }}/serving:staging
 
