@@ -4,7 +4,7 @@ FROM python:3.13-slim
 RUN pip install uv
 
 WORKDIR /app
-COPY . .
+COPY serving/* .
 
 # Sync dependencies
 RUN uv sync --frozen
