@@ -10,7 +10,7 @@ COPY serving/* .
 RUN uv sync --frozen
 
 # Expose FastAPI port
-EXPOSE 9001
+EXPOSE 8080
 
 # Start App
-CMD ["uv", "run", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "9001"]
+CMD ["uv", "run", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]
