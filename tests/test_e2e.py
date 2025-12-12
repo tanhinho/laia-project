@@ -5,7 +5,7 @@ import time
 
 
 # Base URL for FastAPI service
-FASTAPI_BASE_URL = os.getenv('FASTAPI_BASE_URL', 'http://localhost:9001')
+FASTAPI_BASE_URL = os.getenv('FASTAPI_BASE_URL', 'http://localhost:8080')
 
 
 def test_service_health():
