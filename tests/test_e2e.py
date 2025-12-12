@@ -1,10 +1,11 @@
+import os
 import pytest
 import requests
 import time
 
 
 # Base URL for FastAPI service
-FASTAPI_BASE_URL = "http://localhost:9001"
+FASTAPI_BASE_URL = os.getenv('FASTAPI_BASE_URL', 'http://localhost:9001')
 
 
 def wait_for_service(url, timeout=60, interval=2):

@@ -119,6 +119,8 @@ jobs:
       # apply  A/B testing, shadow testing and other approaches to measure
       # and validate the performance of the model before moving to production
       - name: Run Staging tests
+        env:
+          FASTAPI_BASE_URL: http://${{ secrets.SERVING_VM_HOST }}:9001
         run: uv run pytest tests/test_e2e.py -v
 
       # When reaching the stage both the serving and the model will have passed
