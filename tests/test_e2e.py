@@ -8,34 +8,6 @@ import time
 FASTAPI_BASE_URL = os.getenv('FASTAPI_BASE_URL', 'http://localhost:9001')
 
 
-def wait_for_service(url, timeout=60, interval=2):
-    """Wait for a service to be available."""
-    start_time = time.time()
-    while time.time() - start_time < timeout:
-        try:
-            response = requests.get(url, timeout=5)
-            if response.status_code == 200:
-                return True
-        except requests.exceptions.RequestException:
-            pass
-        time.sleep(interval)
-    return False
-
-
-@pytest.fixture(scope="module", autouse=True)
-def wait_for_services():
-    """Wait for FastAPI service to be ready before running tests."""
-    print("\nWaiting for FastAPI service to be ready...")
-
-    # Wait for FastAPI app
-    fastapi_ready = wait_for_service(f"{FASTAPI_BASE_URL}/health", timeout=60)
-    if not fastapi_ready:
-        pytest.skip(
-            "FastAPI service not available. Make sure to run: docker-compose up")
-
-    print("FastAPI service ready!")
-
-
 def test_service_health():
     """Test that FastAPI service is healthy and model is loaded."""
     response = requests.get(f"{FASTAPI_BASE_URL}/health")
