@@ -103,7 +103,7 @@ jobs:
           script: |
             docker run -d \
               --name serving-app-production \
-              -p 9000:8080 \
+              -p 9001:8080 \
               -e MLFLOW_TRACKING_URI \
               -e MODEL_ALIAS \
               -e MLFLOW_MODEL_NAME \
