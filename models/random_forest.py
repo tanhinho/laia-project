@@ -81,6 +81,9 @@ def random_forest():
 
     for params in param_combinations:
         with mlflow.start_run() as run:
+
+            mlflow.log_params(params)
+            
             rf_model = RandomForestRegressor(
                 random_state=42,
                 **params
