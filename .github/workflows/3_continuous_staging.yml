@@ -65,10 +65,7 @@ jobs:
           ping -c 4 ${{ secrets.SERVING_VM_HOST }} || echo "ping failed with code $?"
 
       - name: Copy serving image to staging VM
-        run: |
-          # Install sshpass if using password authentication (common on self-hosted)
-          sudo apt-get install -y sshpass 
-          
+        run: |          
           sshpass -p "${{ secrets.SERVING_VM_PASSWORD }}" scp -o StrictHostKeyChecking=no -P 22 /tmp/serving_staging.tar ${{ secrets.SERVING_VM_USERNAME }}@${{ secrets.SERVING_VM_HOST }}:~/docker_images/
       
       
