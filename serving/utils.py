@@ -5,7 +5,9 @@ PICKUP_DT_COL = 'tpep_pickup_datetime'
 NUMERIC_FEATURES = ['trip_distance']
 RAW_CATEGORICAL_COLS = [
     'passenger_count',
-    'RatecodeID'
+    'VendorID',
+    'PULocationID',
+    'DOLocationID'
 ]
 
 

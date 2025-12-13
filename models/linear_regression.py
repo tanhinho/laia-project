@@ -6,118 +6,115 @@ from sklearn.linear_model import LinearRegression
 import mlflow
 
 
-# Updated to use environment variable for MLflow tracking URI
-mlflow.set_tracking_uri(
-    os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5050"))
+def linear_regression():
+    # Updated to use environment variable for MLflow tracking URI
+    mlflow.set_tracking_uri(
+        os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5050"))
 
-COMMIT_SHA = os.getenv('COMMIT_SHA')
-if not COMMIT_SHA:
-    raise EnvironmentError("Missing required env var: COMMIT_SHA")
+    COMMIT_SHA = os.getenv('COMMIT_SHA')
+    if not COMMIT_SHA:
+        raise EnvironmentError("Missing required env var: COMMIT_SHA")
 
-experiment_name = "linear_regression"
+    experiment_name = "linear_regression"
 
-
-artifact_uri = "mlflow-artifacts:/"
-existing_experiment = mlflow.get_experiment_by_name(experiment_name)
-if existing_experiment:
-    if existing_experiment.artifact_location.startswith("/mlflow") or \
-       existing_experiment.artifact_location.startswith("file:///mlflow"):
-        print(
-            f"Existing experiment has Docker path artifact location: {existing_experiment.artifact_location}")
-        print("Creating new experiment with remote artifact storage...")
-        # 2. Fix naming (was "iris_classification_remote")
-        experiment_name = "linear_regression_remote"
+    artifact_uri = "mlflow-artifacts:/"
+    existing_experiment = mlflow.get_experiment_by_name(experiment_name)
+    if existing_experiment:
+        if existing_experiment.artifact_location.startswith("/mlflow") or \
+                existing_experiment.artifact_location.startswith("file:///mlflow"):
+            print(
+                f"Existing experiment has Docker path artifact location: {existing_experiment.artifact_location}")
+            print("Creating new experiment with remote artifact storage...")
+            # 2. Fix naming (was "iris_classification_remote")
+            experiment_name = "linear_regression_remote"
+            try:
+                experiment_id = mlflow.create_experiment(
+                    experiment_name, artifact_location=artifact_uri)
+                print(f"Created new experiment '{experiment_name}'")
+            except Exception:
+                pass
+        else:
+            print(f"Using existing experiment '{experiment_name}'")
+    else:
         try:
             experiment_id = mlflow.create_experiment(
                 experiment_name, artifact_location=artifact_uri)
-            print(f"Created new experiment '{experiment_name}'")
-        except Exception:
-            pass
-    else:
-        print(f"Using existing experiment '{experiment_name}'")
-else:
+            print(
+                f"Created new experiment '{experiment_name}' with remote artifact storage")
+        except Exception as e:
+            print(f"Note: {e}")
+
+    mlflow.set_experiment(experiment_name)
+
+    ARTIFACTS_PATH = 'artifacts'
+
+    print("Loading processed data...")
+
+    X_train = scipy.sparse.load_npz(os.path.join(ARTIFACTS_PATH, 'X_train.npz'))
+    y_train = np.load(os.path.join(ARTIFACTS_PATH, 'y_train.npy'))
+
+    X_val = scipy.sparse.load_npz(os.path.join(ARTIFACTS_PATH, 'X_val.npz'))
+    y_val = np.load(os.path.join(ARTIFACTS_PATH, 'y_val.npy'))
+
+    print("Data loaded successfully.")
+
+    best_mse = float("inf")
+    best_run_id = None
+
+    with mlflow.start_run() as run:
+        print("Training LinearRegression model...")
+        # --- 1. Initialize the model ---
+        linear_model = LinearRegression()
+        # --- 2. Fit the model ---
+        linear_model.fit(X_train, y_train)
+        # --- 3. Get coefficients ---
+        beta = linear_model.coef_
+        # --- 4. Make predictions ---
+        y_pred = linear_model.predict(X_val)
+
+        # --- 5. Evaluate ---
+        mae = mean_absolute_error(y_val, y_pred)
+        mse = mean_squared_error(y_val, y_pred)
+        r2 = r2_score(y_val, y_pred)
+
+        # mlflow.log_param("coeficients",beta")
+        mlflow.log_metric("MAE", mae)
+        mlflow.log_metric("MSE", mse)
+        mlflow.log_metric("R2", r2)
+
+        # Ensure this path matches where preprocess.py saved it
+        mlflow.log_artifact("artifacts/preprocessor.pkl",
+                            artifact_path="preprocessor")
+
+        signature = mlflow.models.infer_signature(
+            X_train, linear_model.predict(X_train))
+        mlflow.sklearn.log_model(linear_model, "linear_regression",
+                                 signature=signature, input_example=X_train[:5])
+
+        if mse < best_mse:
+            best_mse = mse
+            best_run_id = run.info.run_id
+
+        print("Model and preprocessor logged to MLflow. ")
+
+        print("Coefficients:", beta)
+        print(f"MAE: {mae:.2f}")
+        print(f"MSE: {mse:.2f}")
+        print(f"R²: {r2:.3f}")
+
+    # Register the best model
+    print(f"\nBest model: MAE={best_mse:.4f}")
+    model_uri = f"runs:/{best_run_id}/linear_regression"
+    registered_model = mlflow.register_model(model_uri, "linear_regression")
+
     try:
-        experiment_id = mlflow.create_experiment(
-            experiment_name, artifact_location=artifact_uri)
-        print(
-            f"Created new experiment '{experiment_name}' with remote artifact storage")
+        client = mlflow.tracking.MlflowClient()
+        client.set_registered_model_alias(
+            name=experiment_name, alias=COMMIT_SHA, version=registered_model.version
+        )
     except Exception as e:
-        print(f"Note: {e}")
+        print(f"Could not set model alias: {e}")
+        raise e
 
-mlflow.set_experiment(experiment_name)
-
-ARTIFACTS_PATH = 'artifacts'
-
-print("Loading processed data...")
-
-X_train = scipy.sparse.load_npz(os.path.join(ARTIFACTS_PATH, 'X_train.npz'))
-y_train = np.load(os.path.join(ARTIFACTS_PATH, 'y_train.npy'))
-
-X_val = scipy.sparse.load_npz(os.path.join(ARTIFACTS_PATH, 'X_val.npz'))
-y_val = np.load(os.path.join(ARTIFACTS_PATH, 'y_val.npy'))
-
-print("Data loaded successfully.")
-
-best_mse = float("inf")
-best_run_id = None
-
-with mlflow.start_run() as run:
-    print("Training LinearRegression model...")
-    # --- 1. Initialize the model ---
-    linear_model = LinearRegression()
-    # --- 2. Fit the model ---
-    linear_model.fit(X_train, y_train)
-    # --- 3. Get coefficients ---
-    beta = linear_model.coef_
-    # --- 4. Make predictions ---
-    y_pred = linear_model.predict(X_val)
-
-    # --- 5. Evaluate ---
-    mae = mean_absolute_error(y_val, y_pred)
-    mse = mean_squared_error(y_val, y_pred)
-    r2 = r2_score(y_val, y_pred)
-
-    # mlflow.log_param("coeficients",beta")
-    mlflow.log_metric("MAE", mae)
-    mlflow.log_metric("MSE", mse)
-    mlflow.log_metric("R2", r2)
-
-    # Ensure this path matches where preprocess.py saved it
-    mlflow.log_artifact("artifacts/preprocessor.pkl",
-                        artifact_path="preprocessor")
-
-    signature = mlflow.models.infer_signature(
-        X_train, linear_model.predict(X_train))
-    mlflow.sklearn.log_model(linear_model, "linear_regression",
-                             signature=signature, input_example=X_train[:5])
-
-    if mse < best_mse:
-        best_mse = mse
-        best_run_id = run.info.run_id
-
-    print("Model and preprocessor logged to MLflow. ")
-
-    print("Coefficients:", beta)
-    print(f"MAE: {mae:.2f}")
-    print(f"MSE: {mse:.2f}")
-    print(f"R²: {r2:.3f}")
-
-# Register the best model
-print(f"\nBest model: MAE={best_mse:.4f}")
-model_uri = f"runs:/{best_run_id}/linear_regression"
-registered_model = mlflow.register_model(model_uri, "linear_regression")
-
-try:
-    client = mlflow.tracking.MlflowClient()
-    client.set_registered_model_alias(
-        name=experiment_name, alias="staging", version=registered_model.version
-    )
-
-    client.set_registered_model_alias(
-        name=experiment_name, alias=COMMIT_SHA, version=registered_model.version
-    )
-except Exception as e:
-    print(f"Could not set model alias: {e}")
-    raise e
-
-print(f"Registered model version: {registered_model.version}")
+    print(f"Registered model version: {registered_model.version}")
+    return best_mse, registered_model
