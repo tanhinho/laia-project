@@ -54,7 +54,7 @@ def random_forest():
     ARTIFACTS_PATH = 'artifacts'
 
     param_grid = {
-        "n_estimators": [100, 200, 300, 500],
+        "n_estimators": [100, 200, 300],
         "max_depth": [10, 20, 30],
     }
 
