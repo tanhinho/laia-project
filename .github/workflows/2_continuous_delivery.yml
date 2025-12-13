@@ -58,6 +58,7 @@ jobs:
             -e MLFLOW_MODEL_NAME \
             -e MLFLOW_EXPERIMENT_NAME \
             -e COMMIT_SHA \
+            -v ~/data:/app/data \
             ${{ env.REGISTRY }}/${{ github.repository }}/models:${{ github.sha }}
 
       # Download serving image built in the previous stage
