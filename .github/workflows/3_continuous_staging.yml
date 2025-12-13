@@ -50,7 +50,19 @@ jobs:
 
       # ===================== Setup VPN to access DEI network =====================
       - name: Create OVPN file
-        run: echo "${{ secrets.OVPN_CONFIG_FILE }}" > DEI.ovpn
+        run: |
+          echo "${{ secrets.OVPN_CONFIG_FILE }}" > DEI.ovpn
+          
+          # --- Split Tunneling Fix ---
+          # 1. Ignore the server's directive to route ALL traffic through the VPN
+          echo "pull-filter ignore \"redirect-gateway\"" >> DEI.ovpn
+          
+          # 2. Manually route the private networks through the VPN
+          # Route 10.0.0.0/8 (Covers MLflow at 10.17.x.x and internal VMs)
+          echo "route 10.0.0.0 255.0.0.0" >> DEI.ovpn
+          
+          # 3. Explicitly route the Serving VM host (just in case it's not in 10.x.x.x)
+          echo "route ${{ secrets.SERVING_VM_HOST }} 255.255.255.255" >> DEI.ovpn
 
       - name: Connect to VPN
         uses: "kota65535/github-openvpn-connect-action@v3"
