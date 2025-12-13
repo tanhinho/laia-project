@@ -44,11 +44,6 @@ jobs:
       - name: Pull models image
         run: docker pull ${{ env.REGISTRY }}/${{ github.repository }}/models:${{ github.sha }}
 
-      - name: Install OpenVPN
-        run: |
-          sudo apt update
-          sudo apt install -y openvpn openvpn-systemd-resolved
-
       - name: Create OVPN file
         run: echo "${{ secrets.OVPN_CONFIG_FILE }}" > DEI.ovpn
 
