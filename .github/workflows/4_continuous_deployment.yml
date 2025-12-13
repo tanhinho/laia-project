@@ -44,7 +44,19 @@ jobs:
       - run: docker pull ${{ env.REGISTRY }}/${{ github.repository }}/serving:production
 
       - name: Create OVPN file
-        run: echo "${{ secrets.OVPN_CONFIG_FILE }}" > DEI.ovpn
+        run: |
+          echo "${{ secrets.OVPN_CONFIG_FILE }}" > DEI.ovpn
+          
+          # --- Split Tunneling Fix ---
+          # 1. Ignore the server's directive to route ALL traffic through the VPN
+          echo "pull-filter ignore \"redirect-gateway\"" >> DEI.ovpn
+          
+          # 2. Manually route the private networks through the VPN
+          # Route 10.0.0.0/8 (covers MLflow and internal VMs if they are in this range)
+          echo "route 10.0.0.0 255.0.0.0" >> DEI.ovpn
+          
+          # 3. Explicitly route the Production VM host
+          echo "route ${{ secrets.SERVING_VM_HOST }} 255.255.255.255" >> DEI.ovpn
 
       - name: Connect to VPN
         uses: "kota65535/github-openvpn-connect-action@v3"
