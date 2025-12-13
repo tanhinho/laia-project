@@ -69,6 +69,7 @@ jobs:
           COMMIT_SHA: ${{ github.sha }}
         run: |
           docker run --rm \
+            --network host \
             -e MLFLOW_TRACKING_URI \
             -e MLFLOW_MODEL_NAME \
             -e MLFLOW_EXPERIMENT_NAME \
@@ -90,7 +91,7 @@ jobs:
         run: |
           docker run -d \
             --name serving-app \
-            -p 8080:8080 \
+            --network host \
             -e MLFLOW_TRACKING_URI \
             -e MODEL_ALIAS \
             -e MLFLOW_MODEL_NAME \
