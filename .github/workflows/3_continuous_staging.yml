@@ -65,15 +65,13 @@ jobs:
           ping -c 4 ${{ secrets.SERVING_VM_HOST }} || echo "ping failed with code $?"
 
       - name: Copy serving image to staging VM
-        uses: appleboy/scp-action@v1.0.0
-        with:
-          host: ${{ secrets.SERVING_VM_HOST }}
-          username: ${{ secrets.SERVING_VM_USERNAME }}
-          password: ${{ secrets.SERVING_VM_PASSWORD }}
-          source: /tmp/serving_staging.tar
-          target: ~/docker_images
-          strip_components: 1
-
+        run: |
+          # Install sshpass if using password authentication (common on self-hosted)
+          sudo apt-get install -y sshpass 
+          
+          sshpass -p "${{ secrets.SERVING_VM_PASSWORD }}" scp -o StrictHostKeyChecking=no -P 22 /tmp/serving_staging.tar ${{ secrets.SERVING_VM_USERNAME }}@${{ secrets.SERVING_VM_HOST }}:~/docker_images/
+      
+      
       - name: Connect to DEI server via SSH and prepare environment
         uses: appleboy/ssh-action@v1.2.4
         with:
