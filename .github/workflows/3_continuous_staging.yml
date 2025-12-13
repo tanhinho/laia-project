@@ -43,6 +43,11 @@ jobs:
         run: |
           docker pull ${{ env.REGISTRY }}/${{ github.repository }}/serving:staging
 
+      # ===================== Setup serving container =====================
+      # Save image BEFORE connecting to VPN to avoid routing issues
+      - name: Save serving image to tar
+        run: docker save ${{ env.REGISTRY }}/${{ github.repository }}/serving:staging -o /tmp/serving_staging.tar
+
       # ===================== Setup VPN to access DEI network =====================
       - name: Create OVPN file
         run: echo "${{ secrets.OVPN_CONFIG_FILE }}" > DEI.ovpn
@@ -58,10 +63,6 @@ jobs:
         run: |
           set -x
           ping -c 4 ${{ secrets.SERVING_VM_HOST }} || echo "ping failed with code $?"
-
-      # ===================== Setup serving container =====================
-      - name: Save serving image to tar
-        run: docker save ${{ env.REGISTRY }}/${{ github.repository }}/serving:staging -o /tmp/serving_staging.tar
 
       - name: Copy serving image to staging VM
         uses: appleboy/scp-action@v1.0.0
