@@ -53,32 +53,50 @@ def get_best_existing_model():
     print(f"  Run ID: {best_run.info.run_id}")
     print(f"  MSE: {best_mse}")
     print(f"  Tags: {best_run.data.tags}")
+    print(f"  Experiment ID: {best_run.info.experiment_id}")
 
-    # Check which artifact was logged
-    artifacts = client.list_artifacts(best_run.info.run_id)
-    artifact_path = None
-
-    for artifact in artifacts:
-        if artifact.path in ['linear_regression', 'random_forest', 'gradient_boosting_model']:
-            artifact_path = artifact.path
-            break
-
-    if not artifact_path:
-        # List all artifacts for debugging
-        print(f"Available artifacts: {[a.path for a in artifacts]}")
-        raise RuntimeError(
-            "Could not determine model artifact path from best run. "
-            "Expected one of: linear_regression, random_forest, gradient_boosting_model")
-
-    # Map artifact path to registered model name
-    name_by_artifact = {
-        "linear_regression": "linear_regression",
-        "random_forest": "random_forest",
-        "gradient_boosting_model": "gradient_boosting_regressor",
+    # Get the registered model name from the run's experiment
+    # Map experiment ID to model name
+    experiment = client.get_experiment(best_run.info.experiment_id)
+    experiment_name_map = {
+        "linear_regression": ("linear_regression", "linear_regression"),
+        "random_forest": ("random_forest", "random_forest"),
+        "gradient_boosting_regressor": ("gradient_boosting_regressor", "gradient_boosting_model"),
     }
+    
+    registered_model_name = None
+    artifact_path = None
+    for model_name, (reg_name, art_path) in experiment_name_map.items():
+        if model_name in experiment.name.lower():
+            registered_model_name = reg_name
+            artifact_path = art_path
+            break
+    
+    if not registered_model_name:
+        # Fallback: check run tags or artifacts
+        artifacts = client.list_artifacts(best_run.info.run_id)
+        print(f"Available artifacts: {[a.path for a in artifacts]}")
+        
+        # Try to find model in artifacts
+        for artifact in artifacts:
+            if artifact.path in ['linear_regression', 'random_forest', 'gradient_boosting_model']:
+                artifact_path = artifact.path
+                name_by_artifact = {
+                    "linear_regression": "linear_regression",
+                    "random_forest": "random_forest",
+                    "gradient_boosting_model": "gradient_boosting_regressor",
+                }
+                registered_model_name = name_by_artifact.get(artifact_path)
+                break
+        
+        if not registered_model_name:
+            raise RuntimeError(
+                f"Could not determine model from experiment '{experiment.name}'. "
+                "Expected experiment name to contain: linear_regression, random_forest, or gradient_boosting")
 
-    registered_model_name = name_by_artifact.get(artifact_path)
-
+    print(f"  Registered model name: {registered_model_name}")
+    print(f"  Artifact path: {artifact_path}")
+    
     # Create a mock model object with the necessary attributes
     class ModelInfo:
         def __init__(self, run_id, name):
