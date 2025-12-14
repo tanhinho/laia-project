@@ -10,6 +10,12 @@ on:
     types: [completed]
 
   workflow_dispatch:
+    inputs:
+      skip_training:
+        description: 'Skip model training and use best existing model'
+        required: false
+        type: boolean
+        default: false
 
 env:
   REGISTRY: ${{ vars.REGISTRY }}
@@ -75,7 +81,8 @@ jobs:
             -e MLFLOW_EXPERIMENT_NAME \
             -e COMMIT_SHA \
             -v ~/data:/app/data \
-            ${{ env.REGISTRY }}/${{ github.repository }}/models:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ github.repository }}/models:${{ github.sha }} \
+            ${{ inputs.skip_training == true && '--skip-training' || '' }}
 
       # Download serving image built in the previous stage
       - name: Pull serving image
