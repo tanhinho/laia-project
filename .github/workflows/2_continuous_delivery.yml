@@ -42,7 +42,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ github.event.workflow_run.id }}
           continue-on-error: true
-      
+
       - name: Set skip_training flag
         id: config
         run: |
