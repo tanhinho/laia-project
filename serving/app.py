@@ -97,7 +97,7 @@ def load_artifacts():
                 print(f"✅ Downloaded to: {local_path}", flush=True)
                 break
             except Exception as e:
-                print(f"❌ Path {path_to_try} failed: {e}", flush=True)
+                print(f"❌    Path {path_to_try} failed: {e}", flush=True)
 
         if not local_path:
             raise RuntimeError(
