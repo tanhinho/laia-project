@@ -88,6 +88,11 @@ jobs:
           MLFLOW_MODEL_NAME: ${{ env.MLFLOW_MODEL_NAME }}
           COMMIT_SHA: ${{ github.sha }}
         run: |
+          if [ "${{ steps.config.outputs.skip_training }}" = "true" ]; then
+            SKIP_ARG="--skip-training"
+          else
+            SKIP_ARG=""
+          fi
           docker run --rm \
             --network host \
             -e MLFLOW_TRACKING_URI \
@@ -96,7 +101,7 @@ jobs:
             -e COMMIT_SHA \
             -v ~/data:/app/data \
             ${{ env.REGISTRY }}/${{ github.repository }}/models:${{ github.sha }} \
-            ${{ steps.config.outputs.skip_training == 'true' && '--skip-training' || '' }}
+            bash -c "uv run python preprocess.py --train-size 100000 && uv run python run_all_models.py $SKIP_ARG"
 
       # Download serving image built in the previous stage
       - name: Pull serving image
