@@ -79,25 +79,28 @@ def load_artifacts():
 
         # Download from the run artifacts, not model registry artifacts
         print(f"Downloading preprocessor from run {mv.run_id}...", flush=True)
+        
+        # List artifacts to see what's available
+        client_check = MlflowClient()
+        available_artifacts = client_check.list_artifacts(mv.run_id)
+        print(f"Available artifacts: {[a.path for a in available_artifacts]}", flush=True)
+        
         # Try both possible paths (with and without subdirectory)
-        try:
-            print(f"Trying path: preprocessor/preprocessor.pkl", flush=True)
-            local_path = mlflow.artifacts.download_artifacts(
-                run_id=mv.run_id,
-                artifact_path="preprocessor/preprocessor.pkl")
-            print(f"Downloaded to: {local_path}", flush=True)
-        except Exception as e1:
-            print(f"First path failed: {e1}", flush=True)
-            print(f"Trying fallback path: preprocessor.pkl", flush=True)
-            # Fallback to direct path if not in subdirectory
+        local_path = None
+        for path_to_try in ["preprocessor/preprocessor.pkl", "preprocessor.pkl"]:
             try:
+                print(f"Trying path: {path_to_try}", flush=True)
                 local_path = mlflow.artifacts.download_artifacts(
                     run_id=mv.run_id,
-                    artifact_path="preprocessor.pkl")
-                print(f"Downloaded to: {local_path}", flush=True)
-            except Exception as e2:
-                print(f"Fallback path also failed: {e2}", flush=True)
-                raise
+                    artifact_path=path_to_try)
+                print(f"✅ Downloaded to: {local_path}", flush=True)
+                break
+            except Exception as e:
+                print(f"❌ Path {path_to_try} failed: {e}", flush=True)
+        
+        if not local_path:
+            raise RuntimeError(f"Could not download preprocessor from run {mv.run_id}")
+        
         preprocessor = joblib.load(local_path)
 
         print("Artifacts loaded successfully.", flush=True)

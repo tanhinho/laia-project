@@ -37,7 +37,7 @@ def get_best_existing_model():
     # Filter to only include runs that have an MSE metric logged
     runs = client.search_runs(
         experiment_ids=experiment_ids,
-        filter_string="metrics.mse > 0",
+        filter_string="metrics.mse >= 0",
         order_by=["metrics.mse ASC"],
         max_results=1
     )

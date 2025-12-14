@@ -19,8 +19,8 @@ env:
 
 jobs:
   train-model:
-    # Run only if previous stage finished successfully
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # Run only if previous stage finished successfully (for automatic trigger) OR if manually triggered
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     runs-on: self-hosted
 
     steps:
@@ -32,8 +32,9 @@ jobs:
           pip install uv
           uv sync
 
-      # Download workflow config from previous workflow
+      # Download workflow config from previous workflow (only for automatic triggers)
       - name: Download workflow config
+        if: ${{ github.event_name == 'workflow_run' }}
         uses: actions/download-artifact@v4
         with:
           name: workflow-config-${{ github.sha }}
@@ -41,6 +42,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ github.event.workflow_run.id }}
           continue-on-error: true
+      
       - name: Set skip_training flag
         id: config
         run: |
@@ -48,9 +50,10 @@ jobs:
             SKIP_TRAINING=$(cat workflow-config/skip_training.txt)
             echo "skip_training=$SKIP_TRAINING" >> $GITHUB_OUTPUT
           else
-            echo "skip_training=false" >> $GITHUB_OUTPUT
+            # For manual triggers, always skip training since models image may not have latest code
+            echo "skip_training=true" >> $GITHUB_OUTPUT
           fi
-          echo "Skip training: $(cat workflow-config/skip_training.txt 2>/dev/null || echo 'false')"
+          echo "Skip training: $(cat workflow-config/skip_training.txt 2>/dev/null || echo 'true (manual trigger default)')"
 
       # Log in to GitHub Container Registry (GHCR)
       # We will get the serving image with tag staging from here to validate
