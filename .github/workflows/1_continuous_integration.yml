@@ -8,6 +8,12 @@ on:
     branches: [main]
 
   workflow_dispatch:
+    inputs:
+      skip_training:
+        description: 'Skip model training and use best existing model'
+        required: false
+        type: boolean
+        default: false
 
 env:
   REGISTRY: ${{ vars.REGISTRY }}
@@ -87,3 +93,15 @@ jobs:
         run: |
           docker tag serving:${{ github.sha }} ${{ env.REGISTRY }}/${{ github.repository }}/serving:${{ github.sha }}
           docker push ${{ env.REGISTRY }}/${{ github.repository }}/serving:${{ github.sha }}
+
+      # Save skip_training flag for next workflow
+      - name: Save workflow config
+        run: |
+          mkdir -p workflow-config
+          echo "${{ inputs.skip_training }}" > workflow-config/skip_training.txt
+      - name: Upload workflow config
+        uses: actions/upload-artifact@v4
+        with:
+          name: workflow-config-${{ github.sha }}
+          path: workflow-config/
+          retention-days: 1

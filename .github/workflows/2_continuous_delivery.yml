@@ -10,12 +10,6 @@ on:
     types: [completed]
 
   workflow_dispatch:
-    inputs:
-      skip_training:
-        description: "Skip model training and use best existing model"
-        required: false
-        type: boolean
-        default: false
 
 env:
   REGISTRY: ${{ vars.REGISTRY }}
@@ -37,6 +31,26 @@ jobs:
         run: |
           pip install uv
           uv sync
+
+      # Download workflow config from previous workflow
+      - name: Download workflow config
+        uses: actions/download-artifact@v4
+        with:
+          name: workflow-config-${{ github.sha }}
+          path: workflow-config/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+          continue-on-error: true
+      - name: Set skip_training flag
+        id: config
+        run: |
+          if [ -f workflow-config/skip_training.txt ]; then
+            SKIP_TRAINING=$(cat workflow-config/skip_training.txt)
+            echo "skip_training=$SKIP_TRAINING" >> $GITHUB_OUTPUT
+          else
+            echo "skip_training=false" >> $GITHUB_OUTPUT
+          fi
+          echo "Skip training: $(cat workflow-config/skip_training.txt 2>/dev/null || echo 'false')"
 
       # Log in to GitHub Container Registry (GHCR)
       # We will get the serving image with tag staging from here to validate
@@ -82,7 +96,7 @@ jobs:
             -e COMMIT_SHA \
             -v ~/data:/app/data \
             ${{ env.REGISTRY }}/${{ github.repository }}/models:${{ github.sha }} \
-            ${{ inputs.skip_training == true && '--skip-training' || '' }}
+            ${{ steps.config.outputs.skip_training == 'true' && '--skip-training' || '' }}
 
       # Download serving image built in the previous stage
       - name: Pull serving image
