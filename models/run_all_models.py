@@ -31,7 +31,6 @@ def main():
     else:
         best_model = gb_model
 
-    best_model = lr_model
     # Use the actual registered-model name returned by mlflow.register_model
     best_model_name = best_model.name
 
