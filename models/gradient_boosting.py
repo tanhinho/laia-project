@@ -45,7 +45,8 @@ def gradient_boosting():
         try:
             experiment_id = mlflow.create_experiment(
                 experiment_name, artifact_location=artifact_uri)
-            print(f"Created new experiment '{experiment_name}' with remote artifact storage")
+            print(
+                f"Created new experiment '{experiment_name}' with remote artifact storage")
         except Exception as e:
             print(f"Note: {e}")
     mlflow.set_experiment(experiment_name)
@@ -65,7 +66,8 @@ def gradient_boosting():
 
     print("Loading processed data...")
 
-    X_train = scipy.sparse.load_npz(os.path.join(ARTIFACTS_PATH, 'X_train.npz'))
+    X_train = scipy.sparse.load_npz(
+        os.path.join(ARTIFACTS_PATH, 'X_train.npz'))
     y_train = np.load(os.path.join(ARTIFACTS_PATH, 'y_train.npy'))
 
     X_val = scipy.sparse.load_npz(os.path.join(ARTIFACTS_PATH, 'X_val.npz'))
@@ -109,7 +111,12 @@ def gradient_boosting():
             mlflow.log_metric("MSE", mse)
             mlflow.log_metric("R2", r2)
 
-            signature = mlflow.models.infer_signature(X_train, gbr_model.predict(X_train))
+            # Log preprocessor artifact
+            mlflow.log_artifact("artifacts/preprocessor.pkl",
+                                artifact_path="preprocessor")
+
+            signature = mlflow.models.infer_signature(
+                X_train, gbr_model.predict(X_train))
             mlflow.sklearn.log_model(gbr_model, "gradient_boosting_model",
                                      signature=signature, input_example=X_train[:5])
 
@@ -126,7 +133,8 @@ def gradient_boosting():
     # Register the best model
     print(f"\nBest model: MSE={best_mse:.4f}")
     model_uri = f"runs:/{best_run_id}/gradient_boosting_model"
-    registered_model = mlflow.register_model(model_uri, "gradient_boosting_regressor")
+    registered_model = mlflow.register_model(
+        model_uri, "gradient_boosting_regressor")
 
     try:
         client = mlflow.tracking.MlflowClient()

@@ -107,6 +107,10 @@ def random_forest():
             mlflow.log_metric("MSE", mse)
             mlflow.log_metric("R2", r2)
 
+            # Log preprocessor artifact
+            mlflow.log_artifact("artifacts/preprocessor.pkl",
+                                artifact_path="preprocessor")
+
             signature = mlflow.models.infer_signature(X_train, rf_model.predict(X_train))
             mlflow.sklearn.log_model(rf_model, "random_forest",
                                      signature=signature, input_example=X_train[:5])

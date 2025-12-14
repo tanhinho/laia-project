@@ -79,9 +79,25 @@ def load_artifacts():
 
         # Download from the run artifacts, not model registry artifacts
         print(f"Downloading preprocessor from run {mv.run_id}...", flush=True)
-        local_path = mlflow.artifacts.download_artifacts(
-            run_id=mv.run_id,
-            artifact_path="preprocessor/preprocessor.pkl")
+        # Try both possible paths (with and without subdirectory)
+        try:
+            print(f"Trying path: preprocessor/preprocessor.pkl", flush=True)
+            local_path = mlflow.artifacts.download_artifacts(
+                run_id=mv.run_id,
+                artifact_path="preprocessor/preprocessor.pkl")
+            print(f"Downloaded to: {local_path}", flush=True)
+        except Exception as e1:
+            print(f"First path failed: {e1}", flush=True)
+            print(f"Trying fallback path: preprocessor.pkl", flush=True)
+            # Fallback to direct path if not in subdirectory
+            try:
+                local_path = mlflow.artifacts.download_artifacts(
+                    run_id=mv.run_id,
+                    artifact_path="preprocessor.pkl")
+                print(f"Downloaded to: {local_path}", flush=True)
+            except Exception as e2:
+                print(f"Fallback path also failed: {e2}", flush=True)
+                raise
         preprocessor = joblib.load(local_path)
 
         print("Artifacts loaded successfully.", flush=True)

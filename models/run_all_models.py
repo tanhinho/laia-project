@@ -22,11 +22,20 @@ def get_best_existing_model():
     experiment = client.get_experiment_by_name(experiment_name)
 
     if not experiment:
-        raise RuntimeError(f"No experiment found with name: {experiment_name}")
+        # Try searching across all experiments
+        print(
+            f"Experiment '{experiment_name}' not found, searching all experiments...")
+        all_experiments = client.search_experiments()
+        if not all_experiments:
+            raise RuntimeError(
+                "No experiments found in MLflow. You must train models first.")
+        experiment_ids = [exp.experiment_id for exp in all_experiments]
+    else:
+        experiment_ids = [experiment.experiment_id]
 
-    # Search for all runs in the experiment, ordered by MSE
+    # Search for all runs in the experiment(s), ordered by MSE
     runs = client.search_runs(
-        experiment_ids=[experiment.experiment_id],
+        experiment_ids=experiment_ids,
         filter_string="",
         order_by=["metrics.mse ASC"],
         max_results=1
