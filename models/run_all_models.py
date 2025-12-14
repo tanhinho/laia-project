@@ -34,16 +34,17 @@ def get_best_existing_model():
         experiment_ids = [experiment.experiment_id]
 
     # Search for all runs in the experiment(s), ordered by MSE
+    # Filter to only include runs that have an MSE metric logged
     runs = client.search_runs(
         experiment_ids=experiment_ids,
-        filter_string="",
+        filter_string="metrics.mse > 0",
         order_by=["metrics.mse ASC"],
         max_results=1
     )
 
     if not runs:
         raise RuntimeError(
-            "No existing runs found. You must train models first.")
+            "No existing runs with MSE metric found. You must train models first.")
 
     best_run = runs[0]
     best_mse = best_run.data.metrics.get('mse')
@@ -63,8 +64,11 @@ def get_best_existing_model():
             break
 
     if not artifact_path:
+        # List all artifacts for debugging
+        print(f"Available artifacts: {[a.path for a in artifacts]}")
         raise RuntimeError(
-            "Could not determine model artifact path from best run")
+            "Could not determine model artifact path from best run. "
+            "Expected one of: linear_regression, random_forest, gradient_boosting_model")
 
     # Map artifact path to registered model name
     name_by_artifact = {
