@@ -37,8 +37,8 @@ def get_best_existing_model():
     # Filter to only include runs that have an MSE metric logged
     runs = client.search_runs(
         experiment_ids=experiment_ids,
-        filter_string="metrics.mse >= 0",
-        order_by=["metrics.mse ASC"],
+        filter_string="metrics.MSE >= 0",
+        order_by=["metrics.MSE ASC"],
         max_results=1
     )
 
@@ -47,7 +47,7 @@ def get_best_existing_model():
             "No existing runs with MSE metric found. You must train models first.")
 
     best_run = runs[0]
-    best_mse = best_run.data.metrics.get('mse')
+    best_mse = best_run.data.metrics.get('MSE')
 
     print(f"Best existing model found:")
     print(f"  Run ID: {best_run.info.run_id}")
